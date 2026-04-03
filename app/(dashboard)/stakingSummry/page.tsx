@@ -1,17 +1,18 @@
-import React from 'react'
-import StakingSummary from '@/components/StakingSummy/StakingSummy'
-import Header from '@/components/Include/Header'
-import Footer from '@/components/Include/Footer'
-
+import Header from "@/components/Include/Header";
+import Footer, { PageFooter } from "@/components/Include/Footer";
+import StakingSummary from "@/components/StakingSummy/StakingSummy";
 
 const page = () => {
     return (
-        <div className="min-h-screen bg-[#000] text-white p-4 md:p-8 max-w-7xl mx-auto space-y-10">
+        <div className="bg-[#030a05] text-white">
             <Header />
-            <StakingSummary />
+            <div className="pb-24">
+                <StakingSummary />
+                <PageFooter />
+            </div>
             <Footer />
         </div>
-    )
-}
+    );
+};
 
-export default page
+export default page;
