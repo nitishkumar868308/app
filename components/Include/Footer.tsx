@@ -11,6 +11,7 @@ import {
     Settings,
     Send,
     MessageSquare,
+    Receipt 
 } from "lucide-react";
 
 const navItems = [
@@ -18,7 +19,7 @@ const navItems = [
     { label: "Exchange",  icon: ArrowLeftRight,  href: "/exchange"  },
     { label: "Staking",   icon: Coins,           href: "/staking"   },
     { label: "Wallet",    icon: Wallet,           href: "/wallet"    },
-    { label: "Settings",  icon: Settings,         href: "/settings"  },
+    { label: "Transaction",  icon: Receipt ,         href: "/transactions"  },
 ];
 
 /* ─── Fixed bottom nav pill ─────────────────────────────────────────────────── */

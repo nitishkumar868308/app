@@ -1,8 +1,16 @@
 "use client";
 
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Bell, TrendingUp, TrendingDown } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+    Bell, TrendingUp, TrendingDown, X,
+    Gift, Coins, ShieldCheck, ArrowDownLeft, AlertCircle,
+    CheckCircle2, Trash2,
+} from "lucide-react";
+
+// ─── Ticker data ──────────────────────────────────────────────────────────────
 
 const tickers = [
     { symbol: "ZL",  price: "₹2.4L",   change: "-1.2%",  up: false },
@@ -15,8 +23,114 @@ const tickers = [
     { symbol: "ETH", price: "₹2.4L",   change: "+0.8%",  up: true  },
 ];
 
+// ─── Notification types ───────────────────────────────────────────────────────
+
+interface Notification {
+    id: string;
+    title: string;
+    message: string;
+    time: string;
+    read: boolean;
+    type: "reward" | "transaction" | "security" | "system" | "offer";
+}
+
+const iconMap = {
+    reward:      { icon: Gift,          color: "text-amber-400",   bg: "bg-amber-500/10 border-amber-500/20" },
+    transaction: { icon: ArrowDownLeft, color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
+    security:    { icon: ShieldCheck,   color: "text-sky-400",     bg: "bg-sky-500/10 border-sky-500/20" },
+    system:      { icon: AlertCircle,   color: "text-violet-400",  bg: "bg-violet-500/10 border-violet-500/20" },
+    offer:       { icon: Coins,         color: "text-rose-400",    bg: "bg-rose-500/10 border-rose-500/20" },
+};
+
+const INITIAL_NOTIFICATIONS: Notification[] = [
+    {
+        id: "n1",
+        title: "Signup Bonus Credited",
+        message: "965.0065 YTP has been added to your wallet as a welcome reward.",
+        time: "2 hours ago",
+        read: false,
+        type: "reward",
+    },
+    {
+        id: "n2",
+        title: "KYC Verification Complete",
+        message: "Your identity has been successfully verified. All features are now unlocked.",
+        time: "1 day ago",
+        read: false,
+        type: "security",
+    },
+    {
+        id: "n3",
+        title: "Staking Reward Received",
+        message: "You earned 12.50 YTP from your EARNER staking plan.",
+        time: "2 days ago",
+        read: false,
+        type: "transaction",
+    },
+    {
+        id: "n4",
+        title: "New Offer: Staking Pass",
+        message: "Complete tasks to unlock 10,000 YTP. Limited time offer!",
+        time: "3 days ago",
+        read: true,
+        type: "offer",
+    },
+    {
+        id: "n5",
+        title: "Fund Added Successfully",
+        message: "₹2,000 has been credited to your account via UPI.",
+        time: "5 days ago",
+        read: true,
+        type: "transaction",
+    },
+    {
+        id: "n6",
+        title: "Security Alert",
+        message: "New login detected from Mumbai, India. If this wasn't you, secure your account.",
+        time: "1 week ago",
+        read: true,
+        type: "security",
+    },
+];
+
+// ─── Header ───────────────────────────────────────────────────────────────────
+
 const Header = () => {
     const user = { name: "Nitish Kumar", initials: "NK" };
+    const [open, setOpen]                   = useState(false);
+    const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
+    const panelRef                          = useRef<HTMLDivElement>(null);
+
+    const unreadCount = notifications.filter((n) => !n.read).length;
+
+    // Close on outside click
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+                setOpen(false);
+            }
+        };
+        if (open) document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, [open]);
+
+    const markAllRead = () => {
+        setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    };
+
+    const markRead = (id: string) => {
+        setNotifications((prev) =>
+            prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+        );
+    };
+
+    const removeNotification = (id: string) => {
+        setNotifications((prev) => prev.filter((n) => n.id !== id));
+    };
+
+    const clearAll = () => {
+        setNotifications([]);
+    };
 
     return (
         <header className="w-full sticky top-0 z-50 bg-[#030a05]">
@@ -57,19 +171,139 @@ const Header = () => {
                         <span className="text-sm font-bold text-white leading-tight">{user.name}</span>
                     </div>
 
-                    {/* Notification bell */}
-                    <button className="relative h-9 w-9 rounded-xl bg-white/4 border border-white/8 flex items-center justify-center text-gray-400 hover:text-emerald-400 hover:border-emerald-500/30 transition-all">
-                        <Bell size={16} />
-                        <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-emerald-400 border border-[#030a05]" />
-                    </button>
+                    {/* Notification bell + panel */}
+                    <div className="relative" ref={panelRef}>
+                        <button
+                            onClick={() => setOpen((v) => !v)}
+                            className={`relative h-9 w-9 rounded-xl flex items-center justify-center transition-all ${
+                                open
+                                    ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-400"
+                                    : "bg-white/4 border border-white/8 text-gray-400 hover:text-emerald-400 hover:border-emerald-500/30"
+                            }`}
+                        >
+                            <Bell size={16} />
+                            {unreadCount > 0 && (
+                                <span className="absolute -top-1 -right-1 h-4.5 w-4.5 min-w-4.5 rounded-full bg-emerald-500 border-2 border-[#030a05] flex items-center justify-center text-[8px] font-black text-black leading-none">
+                                    {unreadCount > 9 ? "9+" : unreadCount}
+                                </span>
+                            )}
+                        </button>
+
+                        {/* Notification panel */}
+                        <AnimatePresence>
+                            {open && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -8, scale: 0.97 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: -8, scale: 0.97 }}
+                                    transition={{ duration: 0.18 }}
+                                    className="absolute right-0 top-full mt-2 w-80 sm:w-96 rounded-2xl border border-white/8 shadow-2xl shadow-black/40 overflow-hidden z-50"
+                                    style={{ background: "linear-gradient(170deg,#0d1f12 0%,#050d07 100%)" }}
+                                >
+                                    {/* Panel header */}
+                                    <div className="flex items-center justify-between px-4 py-3 border-b border-white/6">
+                                        <div className="flex items-center gap-2">
+                                            <h3 className="text-xs font-black text-white">Notifications</h3>
+                                            {unreadCount > 0 && (
+                                                <span className="h-4.5 min-w-4.5 px-1 rounded-full bg-emerald-500 flex items-center justify-center text-[8px] font-black text-black">
+                                                    {unreadCount}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            {unreadCount > 0 && (
+                                                <button
+                                                    onClick={markAllRead}
+                                                    className="text-[9px] text-emerald-400 font-bold hover:underline flex items-center gap-1"
+                                                >
+                                                    <CheckCircle2 size={10} /> Mark all read
+                                                </button>
+                                            )}
+                                            {notifications.length > 0 && (
+                                                <button
+                                                    onClick={clearAll}
+                                                    className="text-[9px] text-gray-600 font-bold hover:text-red-400 flex items-center gap-1 transition-colors"
+                                                >
+                                                    <Trash2 size={10} /> Clear
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => setOpen(false)}
+                                                className="h-6 w-6 rounded-md bg-white/4 flex items-center justify-center text-gray-500 hover:text-white transition-colors ml-1"
+                                            >
+                                                <X size={12} />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Notification list */}
+                                    <div className="max-h-96 overflow-y-auto">
+                                        {notifications.length === 0 ? (
+                                            <div className="py-12 flex flex-col items-center gap-2">
+                                                <div className="h-10 w-10 rounded-xl bg-white/4 border border-white/6 flex items-center justify-center">
+                                                    <Bell size={18} className="text-gray-700" />
+                                                </div>
+                                                <p className="text-[11px] text-gray-600 font-bold">No notifications</p>
+                                                <p className="text-[9px] text-gray-700">You&apos;re all caught up!</p>
+                                            </div>
+                                        ) : (
+                                            notifications.map((n) => {
+                                                const cfg  = iconMap[n.type];
+                                                const Icon = cfg.icon;
+
+                                                return (
+                                                    <div
+                                                        key={n.id}
+                                                        onClick={() => markRead(n.id)}
+                                                        className={`flex gap-3 px-4 py-3.5 border-b border-white/4 last:border-0 cursor-pointer transition-colors ${
+                                                            n.read ? "hover:bg-white/2" : "bg-emerald-500/3 hover:bg-emerald-500/5"
+                                                        }`}
+                                                    >
+                                                        {/* Icon */}
+                                                        <div className={`h-8 w-8 rounded-xl border flex items-center justify-center shrink-0 mt-0.5 ${cfg.bg}`}>
+                                                            <Icon size={14} className={cfg.color} />
+                                                        </div>
+
+                                                        {/* Content */}
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="flex items-start justify-between gap-2">
+                                                                <p className={`text-[11px] font-bold leading-tight ${n.read ? "text-gray-400" : "text-white"}`}>
+                                                                    {n.title}
+                                                                </p>
+                                                                {!n.read && (
+                                                                    <span className="h-2 w-2 rounded-full bg-emerald-400 shrink-0 mt-1" />
+                                                                )}
+                                                            </div>
+                                                            <p className="text-[10px] text-gray-600 mt-0.5 leading-relaxed line-clamp-2">
+                                                                {n.message}
+                                                            </p>
+                                                            <p className="text-[9px] text-gray-700 mt-1">{n.time}</p>
+                                                        </div>
+
+                                                        {/* Remove */}
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); removeNotification(n.id); }}
+                                                            className="h-6 w-6 rounded-md flex items-center justify-center text-gray-700 hover:text-red-400 hover:bg-red-500/10 transition-all shrink-0 mt-0.5 opacity-0 group-hover:opacity-100"
+                                                            style={{ opacity: 1 }}
+                                                        >
+                                                            <X size={11} />
+                                                        </button>
+                                                    </div>
+                                                );
+                                            })
+                                        )}
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
 
                     {/* Avatar */}
-                    <div className="h-9 w-9 rounded-xl bg-linear-to-br from-emerald-400 to-green-600 flex items-center justify-center text-white text-xs font-black shadow-lg shadow-emerald-500/20 cursor-pointer">
+                    <Link href="/profile" className="h-9 w-9 rounded-xl bg-linear-to-br from-emerald-400 to-green-600 flex items-center justify-center text-white text-xs font-black shadow-lg shadow-emerald-500/20 cursor-pointer hover:shadow-emerald-500/40 transition-all">
                         {user.initials}
-                    </div>
+                    </Link>
                 </div>
             </div>
-
         </header>
     );
 };

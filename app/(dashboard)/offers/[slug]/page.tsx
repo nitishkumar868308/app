@@ -1,18 +1,25 @@
+"use client";
+
+import { use } from "react";
 import Header from "@/components/Include/Header";
 import Footer, { PageFooter } from "@/components/Include/Footer";
-import Wallet from "@/components/Wallet/Wallet";
+import OfferDetail from "@/components/Offers/OfferDetail";
 
-const page = () => {
+export default function OfferDetailPage({
+    params,
+}: {
+    params: Promise<{ slug: string }>;
+}) {
+    const { slug } = use(params);
+
     return (
         <div className="bg-[#030a05] text-white">
             <Header />
             <div className="pb-24">
-                <Wallet />
+                <OfferDetail slug={slug} />
                 <PageFooter />
             </div>
             <Footer />
         </div>
     );
-};
-
-export default page;
+}
