@@ -7,7 +7,7 @@ const ENV = process.env.NEXT_PUBLIC_API_ENV || "local";
 
 const BASE_URLS: Record<string, string> = {
     local:      process.env.NEXT_PUBLIC_API_URL_LOCAL      || "http://localhost:8000/api/v1",
-    staging:    process.env.NEXT_PUBLIC_API_URL_STAGING     || "https://staging-api.yatripay.com/api/v1",
+    staging:    process.env.NEXT_PUBLIC_API_URL_STAGING     || "https://chiru-stage.yatripay.com/api/v1",
     production: process.env.NEXT_PUBLIC_API_URL_PRODUCTION  || "https://api.yatripay.com/api/v1",
 };
 

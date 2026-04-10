@@ -39,7 +39,7 @@ export const OFFERS: OfferConfig[] = [
         reward: "₹10,000 Staking Pass",
         icon: Flame,
         task_type: "Mega Offer",
-        claim_id: "1",
+        claim_id: "5",
         api: "task",
         gradient: {
             from: "rgba(245,158,11,0.18)",
@@ -58,7 +58,7 @@ export const OFFERS: OfferConfig[] = [
         reward: "APY Boost",
         icon: Zap,
         task_type: "staking-hike-activation",
-        claim_id: "4",
+        claim_id: "36",
         api: "task",
         gradient: {
             from: "rgba(159,18,57,0.25)",
