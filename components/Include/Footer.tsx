@@ -56,7 +56,7 @@ const Footer = () => {
                                 <span className="relative z-10">
                                     <Icon size={18} strokeWidth={active ? 2.5 : 1.8} />
                                 </span>
-                                <span className={`relative z-10 text-[9px] font-bold uppercase tracking-wide leading-none ${active ? "text-emerald-400" : "text-gray-600"}`}>
+                                <span className={`relative z-10 text-[13px] font-bold uppercase tracking-wide leading-none ${active ? "text-emerald-400" : "text-gray-600"}`}>
                                     {label}
                                 </span>
                             </Link>
@@ -92,7 +92,7 @@ export const PageFooter = () => (
 
                 {/* Community icons */}
                 <div className="flex flex-col items-start sm:items-end gap-2.5">
-                    <p className="text-[9px] text-gray-600 font-black uppercase tracking-[0.18em]">
+                    <p className="text-[13px] text-gray-600 font-black uppercase tracking-[0.18em]">
                         Community
                     </p>
                     <div className="flex items-center gap-2">
@@ -116,18 +116,18 @@ export const PageFooter = () => (
 
             {/* Bottom bar */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-5 border-t border-white/4">
-                <p className="text-[10px] text-gray-700 font-medium">
+                <p className="text-[12px] text-gray-700 font-medium">
                     &copy; 2026 YatriPay Decentralized Protocol. All Rights Reserved.
                 </p>
                 <div className="flex items-center gap-4">
                     {["Privacy", "Terms", "Docs"].map((l) => (
-                        <a key={l} href="#" className="text-[10px] text-gray-700 hover:text-gray-400 transition-colors font-medium">
+                        <a key={l} href="#" className="text-[12px] text-gray-700 hover:text-gray-400 transition-colors font-medium">
                             {l}
                         </a>
                     ))}
                     {/* <div className="flex items-center gap-1.5">
                         <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                        <span className="text-[10px] text-emerald-500/60 font-bold uppercase tracking-wider">
+                        <span className="text-[12px] text-emerald-500/60 font-bold uppercase tracking-wider">
                             All systems operational
                         </span>
                     </div> */}

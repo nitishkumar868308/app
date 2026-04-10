@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Header from "@/components/Include/Header";
 import Footer, { PageFooter } from "@/components/Include/Footer";
 import NetWorthSection from "./NetWorthSection";
@@ -8,8 +9,16 @@ import StakingPlans from "./StakingPlans";
 import HotOffers from "./HotOffers";
 import ReferralSection from "./ReferralSection";
 import MarketChart from "./MarketChart";
+import { useWallet } from "@/context/WalletContext";
 
 export default function Dashboard() {
+    const { refresh } = useWallet();
+
+    // Re-fetch wallet data every time dashboard mounts (e.g. coming back from Add Fund / Buy Asset)
+    useEffect(() => {
+        refresh();
+    }, []);
+
     return (
         /*
          * Outer wrapper is NOT min-h-screen so the page can grow

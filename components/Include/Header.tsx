@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/context/AuthContext";
 import {
     Bell, TrendingUp, TrendingDown, X,
     Gift, Coins, ShieldCheck, ArrowDownLeft, AlertCircle,
@@ -96,7 +97,13 @@ const INITIAL_NOTIFICATIONS: Notification[] = [
 // ─── Header ───────────────────────────────────────────────────────────────────
 
 const Header = () => {
-    const user = { name: "Nitish Kumar", initials: "NK" };
+    const { user: authUser } = useAuth();
+    const userName = authUser
+        ? `${authUser.first_name}${authUser.last_name ? " " + authUser.last_name : ""}`.trim()
+        : "User";
+    const initials = authUser
+        ? `${authUser.first_name?.[0] || ""}${authUser.last_name?.[0] || ""}`.toUpperCase() || "U"
+        : "U";
     const [open, setOpen]                   = useState(false);
     const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
     const panelRef                          = useRef<HTMLDivElement>(null);
@@ -138,7 +145,7 @@ const Header = () => {
             <div className="w-full bg-[#050d06] border-b border-emerald-500/10 overflow-hidden py-2">
                 <div className="flex animate-marquee whitespace-nowrap gap-0">
                     {[...tickers, ...tickers].map((t, i) => (
-                        <span key={i} className="inline-flex items-center gap-2 px-5 text-[11px] font-medium border-r border-white/5 last:border-0">
+                        <span key={i} className="inline-flex items-center gap-2 px-5 text-[13px] font-medium border-r border-white/5 last:border-0">
                             <span className="text-gray-300 font-bold">{t.symbol}</span>
                             <span className="text-gray-400">{t.price}</span>
                             <span className={`flex items-center gap-0.5 font-bold ${t.up ? "text-emerald-400" : "text-red-400"}`}>
@@ -167,8 +174,8 @@ const Header = () => {
                 {/* Right: Welcome + Bell + Avatar */}
                 <div className="flex items-center gap-3">
                     <div className="hidden sm:flex flex-col items-end">
-                        <span className="text-[10px] text-gray-500 uppercase tracking-wider">Welcome,</span>
-                        <span className="text-sm font-bold text-white leading-tight">{user.name}</span>
+                        <span className="text-[12px] text-gray-500 uppercase tracking-wider">Welcome,</span>
+                        <span className="text-sm font-bold text-white leading-tight">{userName}</span>
                     </div>
 
                     {/* Notification bell + panel */}
@@ -183,7 +190,7 @@ const Header = () => {
                         >
                             <Bell size={16} />
                             {unreadCount > 0 && (
-                                <span className="absolute -top-1 -right-1 h-4.5 w-4.5 min-w-4.5 rounded-full bg-emerald-500 border-2 border-[#030a05] flex items-center justify-center text-[8px] font-black text-black leading-none">
+                                <span className="absolute -top-1 -right-1 h-4.5 w-4.5 min-w-4.5 rounded-full bg-emerald-500 border-2 border-[#030a05] flex items-center justify-center text-[12px] font-black text-black leading-none">
                                     {unreadCount > 9 ? "9+" : unreadCount}
                                 </span>
                             )}
@@ -205,7 +212,7 @@ const Header = () => {
                                         <div className="flex items-center gap-2">
                                             <h3 className="text-xs font-black text-white">Notifications</h3>
                                             {unreadCount > 0 && (
-                                                <span className="h-4.5 min-w-4.5 px-1 rounded-full bg-emerald-500 flex items-center justify-center text-[8px] font-black text-black">
+                                                <span className="h-4.5 min-w-4.5 px-1 rounded-full bg-emerald-500 flex items-center justify-center text-[12px] font-black text-black">
                                                     {unreadCount}
                                                 </span>
                                             )}
@@ -214,7 +221,7 @@ const Header = () => {
                                             {unreadCount > 0 && (
                                                 <button
                                                     onClick={markAllRead}
-                                                    className="text-[9px] text-emerald-400 font-bold hover:underline flex items-center gap-1"
+                                                    className="text-[13px] text-emerald-400 font-bold hover:underline flex items-center gap-1"
                                                 >
                                                     <CheckCircle2 size={10} /> Mark all read
                                                 </button>
@@ -222,7 +229,7 @@ const Header = () => {
                                             {notifications.length > 0 && (
                                                 <button
                                                     onClick={clearAll}
-                                                    className="text-[9px] text-gray-600 font-bold hover:text-red-400 flex items-center gap-1 transition-colors"
+                                                    className="text-[13px] text-gray-600 font-bold hover:text-red-400 flex items-center gap-1 transition-colors"
                                                 >
                                                     <Trash2 size={10} /> Clear
                                                 </button>
@@ -243,8 +250,8 @@ const Header = () => {
                                                 <div className="h-10 w-10 rounded-xl bg-white/4 border border-white/6 flex items-center justify-center">
                                                     <Bell size={18} className="text-gray-700" />
                                                 </div>
-                                                <p className="text-[11px] text-gray-600 font-bold">No notifications</p>
-                                                <p className="text-[9px] text-gray-700">You&apos;re all caught up!</p>
+                                                <p className="text-[13px] text-gray-600 font-bold">No notifications</p>
+                                                <p className="text-[13px] text-gray-700">You&apos;re all caught up!</p>
                                             </div>
                                         ) : (
                                             notifications.map((n) => {
@@ -267,17 +274,17 @@ const Header = () => {
                                                         {/* Content */}
                                                         <div className="min-w-0 flex-1">
                                                             <div className="flex items-start justify-between gap-2">
-                                                                <p className={`text-[11px] font-bold leading-tight ${n.read ? "text-gray-400" : "text-white"}`}>
+                                                                <p className={`text-[13px] font-bold leading-tight ${n.read ? "text-gray-400" : "text-white"}`}>
                                                                     {n.title}
                                                                 </p>
                                                                 {!n.read && (
                                                                     <span className="h-2 w-2 rounded-full bg-emerald-400 shrink-0 mt-1" />
                                                                 )}
                                                             </div>
-                                                            <p className="text-[10px] text-gray-600 mt-0.5 leading-relaxed line-clamp-2">
+                                                            <p className="text-[12px] text-gray-600 mt-0.5 leading-relaxed line-clamp-2">
                                                                 {n.message}
                                                             </p>
-                                                            <p className="text-[9px] text-gray-700 mt-1">{n.time}</p>
+                                                            <p className="text-[13px] text-gray-700 mt-1">{n.time}</p>
                                                         </div>
 
                                                         {/* Remove */}
@@ -300,7 +307,7 @@ const Header = () => {
 
                     {/* Avatar */}
                     <Link href="/profile" className="h-9 w-9 rounded-xl bg-linear-to-br from-emerald-400 to-green-600 flex items-center justify-center text-white text-xs font-black shadow-lg shadow-emerald-500/20 cursor-pointer hover:shadow-emerald-500/40 transition-all">
-                        {user.initials}
+                        {initials}
                     </Link>
                 </div>
             </div>

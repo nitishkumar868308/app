@@ -57,7 +57,7 @@ const Section4 = () => {
                                         </div>
                                     </div>
                                     <div className="absolute top-4 left-4 z-20">
-                                        <span className="text-[10px] font-mono bg-black text-gray-400 px-2 py-1 rounded border border-white/10">
+                                        <span className="text-[12px] font-mono bg-black text-gray-400 px-2 py-1 rounded border border-white/10">
                                             {video.step}
                                         </span>
                                     </div>
@@ -65,7 +65,7 @@ const Section4 = () => {
 
                                 <div className="p-5">
                                     <div className="flex items-center gap-3 mb-3">
-                                        <span className="flex items-center gap-1.5 text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                                        <span className="flex items-center gap-1.5 text-[12px] font-medium text-gray-500 uppercase tracking-wider">
                                             <Clock size={12} /> {video.duration}
                                         </span>
                                     </div>

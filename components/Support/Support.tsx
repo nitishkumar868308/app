@@ -106,7 +106,7 @@ const StatusBadge = ({ status }: { status: TicketStatus }) => {
     const Icon = cfg.icon;
     const label = status.replace("_", " ");
     return (
-        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[8px] font-black uppercase tracking-widest ${cfg.bg} ${cfg.text}`}>
+        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[12px] font-black uppercase tracking-widest ${cfg.bg} ${cfg.text}`}>
             <Icon size={9} />
             {label}
         </span>
@@ -193,13 +193,13 @@ const CreateTicketModal = ({
                                 <MessageSquare size={20} className="text-emerald-400" />
                             </div>
                             <h3 className="text-base font-black text-white">Create Ticket</h3>
-                            <p className="text-[11px] text-gray-500">Describe your issue and we&apos;ll get back to you</p>
+                            <p className="text-[13px] text-gray-500">Describe your issue and we&apos;ll get back to you</p>
                         </div>
 
                         {/* Ticket Type */}
                         <div className="space-y-1.5">
-                            <label className="text-[10px] text-gray-500 uppercase tracking-wider font-bold px-1">
-                                Ticket Type <span className="text-emerald-500 text-[8px]">*</span>
+                            <label className="text-[12px] text-gray-500 uppercase tracking-wider font-bold px-1">
+                                Ticket Type <span className="text-emerald-500 text-[12px]">*</span>
                             </label>
                             <div className="relative">
                                 <button
@@ -224,7 +224,7 @@ const CreateTicketModal = ({
                                                 <button
                                                     key={t}
                                                     onClick={() => { setType(t); setShowTypeDrop(false); }}
-                                                    className={`w-full text-left px-4 py-2.5 text-[11px] font-bold transition-all ${
+                                                    className={`w-full text-left px-4 py-2.5 text-[13px] font-bold transition-all ${
                                                         type === t
                                                             ? "bg-emerald-500/10 text-emerald-400"
                                                             : "text-gray-400 hover:bg-white/4 hover:text-white"
@@ -241,13 +241,13 @@ const CreateTicketModal = ({
 
                         {/* Priority */}
                         <div className="space-y-1.5">
-                            <label className="text-[10px] text-gray-500 uppercase tracking-wider font-bold px-1">Priority</label>
+                            <label className="text-[12px] text-gray-500 uppercase tracking-wider font-bold px-1">Priority</label>
                             <div className="flex gap-2">
                                 {(["Low", "Medium", "High"] as TicketPriority[]).map((p) => (
                                     <button
                                         key={p}
                                         onClick={() => setPriority(p)}
-                                        className={`flex-1 py-2.5 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${
+                                        className={`flex-1 py-2.5 rounded-xl border text-[12px] font-black uppercase tracking-widest transition-all ${
                                             priority === p
                                                 ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
                                                 : "border-white/6 text-gray-600 hover:text-gray-400"
@@ -261,8 +261,8 @@ const CreateTicketModal = ({
 
                         {/* Subject */}
                         <div className="space-y-1.5">
-                            <label className="text-[10px] text-gray-500 uppercase tracking-wider font-bold px-1">
-                                Subject <span className="text-emerald-500 text-[8px]">*</span>
+                            <label className="text-[12px] text-gray-500 uppercase tracking-wider font-bold px-1">
+                                Subject <span className="text-emerald-500 text-[12px]">*</span>
                             </label>
                             <input
                                 type="text"
@@ -276,8 +276,8 @@ const CreateTicketModal = ({
 
                         {/* Message */}
                         <div className="space-y-1.5">
-                            <label className="text-[10px] text-gray-500 uppercase tracking-wider font-bold px-1">
-                                Message <span className="text-emerald-500 text-[8px]">*</span>
+                            <label className="text-[12px] text-gray-500 uppercase tracking-wider font-bold px-1">
+                                Message <span className="text-emerald-500 text-[12px]">*</span>
                             </label>
                             <textarea
                                 value={message}
@@ -291,8 +291,8 @@ const CreateTicketModal = ({
 
                         {/* Attachment */}
                         <div className="space-y-1.5">
-                            <label className="text-[10px] text-gray-500 uppercase tracking-wider font-bold px-1">
-                                Attachment <span className="text-[9px] text-gray-700 normal-case italic font-normal">(optional)</span>
+                            <label className="text-[12px] text-gray-500 uppercase tracking-wider font-bold px-1">
+                                Attachment <span className="text-[13px] text-gray-700 normal-case italic font-normal">(optional)</span>
                             </label>
                             <input ref={fileRef} type="file" accept="image/*,.pdf" onChange={handleFile} className="hidden" />
 
@@ -303,7 +303,7 @@ const CreateTicketModal = ({
                                     style={{ background: "rgba(5,13,7,0.5)" }}
                                 >
                                     <Paperclip size={14} className="text-gray-600 group-hover:text-emerald-400 transition-colors" />
-                                    <span className="text-[11px] text-gray-500 font-bold group-hover:text-gray-400">
+                                    <span className="text-[13px] text-gray-500 font-bold group-hover:text-gray-400">
                                         Click to attach a file
                                     </span>
                                 </button>
@@ -316,8 +316,8 @@ const CreateTicketModal = ({
                                         <ImageIcon size={16} className="text-gray-500" />
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <p className="text-[11px] font-bold text-white truncate">{file.name}</p>
-                                        <p className="text-[9px] text-gray-600">{(file.size / 1024).toFixed(1)} KB</p>
+                                        <p className="text-[13px] font-bold text-white truncate">{file.name}</p>
+                                        <p className="text-[13px] text-gray-600">{(file.size / 1024).toFixed(1)} KB</p>
                                     </div>
                                     <button
                                         onClick={() => { setFile(null); if (fileRef.current) fileRef.current.value = ""; }}
@@ -333,7 +333,7 @@ const CreateTicketModal = ({
                         <button
                             onClick={handleSubmit}
                             disabled={!canSubmit}
-                            className={`w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2.5 transition-all duration-200 ${
+                            className={`w-full py-4 rounded-2xl font-black text-[13px] uppercase tracking-widest flex items-center justify-center gap-2.5 transition-all duration-200 ${
                                 canSubmit
                                     ? "bg-emerald-500 hover:bg-emerald-400 text-black shadow-[0_8px_24px_rgba(16,185,129,0.3)] hover:shadow-[0_8px_32px_rgba(16,185,129,0.45)] active:scale-[0.98]"
                                     : "bg-white/4 border border-white/8 text-gray-600 cursor-not-allowed"
@@ -394,7 +394,7 @@ const Support = () => {
                     <Image src="/logo.png" alt="YatriPay" width={120} height={32} className="h-7 w-auto object-contain" />
                 </div>
                 <h1 className="text-2xl font-black text-white tracking-tight">Support Center</h1>
-                <p className="text-[11px] text-gray-600 max-w-sm mx-auto">
+                <p className="text-[13px] text-gray-600 max-w-sm mx-auto">
                     Need help? Create a ticket and our team will assist you
                 </p>
             </motion.div>
@@ -414,7 +414,7 @@ const Support = () => {
                         value={search}
                         onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                         placeholder="Search tickets..."
-                        className="w-full rounded-xl border border-white/8 py-2.5 pl-10 pr-4 text-[11px] font-semibold text-white placeholder-gray-700 focus:outline-none focus:border-emerald-500/50 transition-all"
+                        className="w-full rounded-xl border border-white/8 py-2.5 pl-10 pr-4 text-[13px] font-semibold text-white placeholder-gray-700 focus:outline-none focus:border-emerald-500/50 transition-all"
                         style={{ background: "rgba(10,26,15,0.7)" }}
                     />
                 </div>
@@ -425,7 +425,7 @@ const Support = () => {
                         <button
                             key={s}
                             onClick={() => { setStatusFilter(s); setPage(1); }}
-                            className={`shrink-0 px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${
+                            className={`shrink-0 px-3 py-2 rounded-lg text-[13px] font-black uppercase tracking-widest transition-all ${
                                 statusFilter === s
                                     ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-400"
                                     : "border border-white/6 text-gray-600 hover:text-gray-400"
@@ -439,7 +439,7 @@ const Support = () => {
                 {/* New ticket button */}
                 <button
                     onClick={() => setShowModal(true)}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-black text-[10px] uppercase tracking-widest shadow-[0_4px_16px_rgba(16,185,129,0.3)] active:scale-[0.98] transition-all shrink-0"
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-black text-[12px] uppercase tracking-widest shadow-[0_4px_16px_rgba(16,185,129,0.3)] active:scale-[0.98] transition-all shrink-0"
                 >
                     <Plus size={14} strokeWidth={3} />
                     New Ticket
@@ -455,7 +455,7 @@ const Support = () => {
                 style={{ background: "rgba(10,26,15,0.7)" }}
             >
                 {/* Desktop table header */}
-                <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 border-b border-white/6 text-[9px] text-gray-600 uppercase tracking-widest font-black">
+                <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 border-b border-white/6 text-[13px] text-gray-600 uppercase tracking-widest font-black">
                     <div className="col-span-1">ID</div>
                     <div className="col-span-2">Type</div>
                     <div className="col-span-3">Subject</div>
@@ -471,7 +471,7 @@ const Support = () => {
                             <LifeBuoy size={24} className="text-gray-700" />
                         </div>
                         <p className="text-sm text-gray-600 font-bold">No Tickets Available</p>
-                        <p className="text-[10px] text-gray-700">Click &quot;New Ticket&quot; to create one.</p>
+                        <p className="text-[12px] text-gray-700">Click &quot;New Ticket&quot; to create one.</p>
                     </div>
                 ) : (
                     <div>
@@ -488,16 +488,16 @@ const Support = () => {
                                     {/* Desktop row */}
                                     <div className="hidden md:grid grid-cols-12 gap-4 items-center px-6 py-4">
                                         <div className="col-span-1">
-                                            <span className="text-[10px] font-mono font-bold text-gray-500">{ticket.id}</span>
+                                            <span className="text-[12px] font-mono font-bold text-gray-500">{ticket.id}</span>
                                         </div>
                                         <div className="col-span-2">
-                                            <span className="text-[11px] font-bold text-gray-400">{ticket.type}</span>
+                                            <span className="text-[13px] font-bold text-gray-400">{ticket.type}</span>
                                         </div>
                                         <div className="col-span-3">
-                                            <p className="text-[11px] font-bold text-white truncate">{ticket.subject}</p>
+                                            <p className="text-[13px] font-bold text-white truncate">{ticket.subject}</p>
                                         </div>
                                         <div className="col-span-1">
-                                            <span className={`text-[10px] font-black ${priorityConfig[ticket.priority]}`}>
+                                            <span className={`text-[12px] font-black ${priorityConfig[ticket.priority]}`}>
                                                 {ticket.priority}
                                             </span>
                                         </div>
@@ -505,10 +505,10 @@ const Support = () => {
                                             <StatusBadge status={ticket.status} />
                                         </div>
                                         <div className="col-span-1">
-                                            <span className="text-[10px] text-gray-600 tabular-nums">{ticket.date}</span>
+                                            <span className="text-[12px] text-gray-600 tabular-nums">{ticket.date}</span>
                                         </div>
                                         <div className="col-span-2 text-right">
-                                            <span className="text-[10px] text-gray-600 tabular-nums">{ticket.lastReply}</span>
+                                            <span className="text-[12px] text-gray-600 tabular-nums">{ticket.lastReply}</span>
                                         </div>
                                     </div>
 
@@ -517,17 +517,17 @@ const Support = () => {
                                         <div className="flex items-start justify-between gap-3">
                                             <div className="min-w-0 flex-1">
                                                 <div className="flex items-center gap-2 mb-1">
-                                                    <span className="text-[9px] font-mono font-bold text-gray-600">{ticket.id}</span>
+                                                    <span className="text-[13px] font-mono font-bold text-gray-600">{ticket.id}</span>
                                                     <StatusBadge status={ticket.status} />
                                                 </div>
                                                 <p className="text-xs font-bold text-white truncate">{ticket.subject}</p>
-                                                <p className="text-[10px] text-gray-600 mt-0.5">{ticket.type}</p>
+                                                <p className="text-[12px] text-gray-600 mt-0.5">{ticket.type}</p>
                                             </div>
-                                            <span className={`text-[9px] font-black shrink-0 ${priorityConfig[ticket.priority]}`}>
+                                            <span className={`text-[13px] font-black shrink-0 ${priorityConfig[ticket.priority]}`}>
                                                 {ticket.priority}
                                             </span>
                                         </div>
-                                        <div className="flex items-center justify-between text-[9px] text-gray-700">
+                                        <div className="flex items-center justify-between text-[13px] text-gray-700">
                                             <span>Created: {ticket.date}</span>
                                             <span>Reply: {ticket.lastReply}</span>
                                         </div>
@@ -558,7 +558,7 @@ const Support = () => {
                                 <button
                                     key={p}
                                     onClick={() => setPage(p)}
-                                    className={`h-9 w-9 rounded-xl flex items-center justify-center text-[11px] font-black transition-all ${
+                                    className={`h-9 w-9 rounded-xl flex items-center justify-center text-[13px] font-black transition-all ${
                                         p === currentPage
                                             ? "bg-emerald-500 text-black shadow-[0_4px_12px_rgba(16,185,129,0.3)]"
                                             : "text-gray-500 hover:text-white hover:bg-white/4"

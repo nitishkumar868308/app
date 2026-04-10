@@ -1,55 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
     User, Mail, Phone, MapPin, Calendar, Shield,
     CheckCircle2, AlertCircle, Edit3, Camera,
     Copy, Star, Award, Users,
     Wallet, TrendingUp, Clock, LogOut, Settings,
-    ChevronRight, Lock, KeyRound,ExternalLink
+    ChevronRight, Lock, KeyRound, ExternalLink,
 } from "lucide-react";
 import Link from "next/link";
 import PinModal from "@/components/Include/PinModal";
+import { useAuth } from "@/context/AuthContext";
+import { useWallet } from "@/context/WalletContext";
+import { getUserData, setUserData } from "@/lib/auth";
+import api from "@/lib/axios";
+import { ENDPOINTS } from "@/lib/endpoints";
 
-// ─── User data (hardcoded for now) ────────────────────────────────────────────
-
-const USER = {
-    name: "Nitish Kumar",
-    email: "nitish@example.com",
-    phone: "+91 98765 43210",
-    address: "Mumbai, Maharashtra, India",
-    dob: "1998-05-15",
-    joined: "2026-02-22",
-    uid: "YTP-00042891",
-    referralCode: "NITISH10",
-    kycStatus: "Verified" as const,
-    tier: "Gold",
-    initials: "NK",
-};
-
-const STATS = [
-    { label: "Total Balance",    value: "₹13,299.50", icon: Wallet,     color: "text-emerald-400" },
-    { label: "Total Staked",     value: "10,000 YTP",  icon: TrendingUp, color: "text-amber-400" },
-    { label: "Referrals",        value: "5 Users",     icon: Users,      color: "text-violet-400" },
-    { label: "Member Since",     value: "Feb 2026",    icon: Clock,      color: "text-sky-400" },
-];
-
-const ACTIVITY = [
-    { label: "Last Login",          value: "Today, 10:32 AM" },
-    { label: "Last Transaction",    value: "Apr 04, 2026" },
-    { label: "KYC Completed",       value: "Mar 01, 2026" },
-    { label: "First Staking",       value: "Mar 15, 2026" },
-];
-
-const QUICK_LINKS = [
-    { label: "Account Settings",   icon: Settings,    href: "/settings" },
-    { label: "KYC Verification",   icon: Shield,      href: "/kyc" },
-    { label: "Transaction History", icon: Clock,       href: "/transactions" },
-    { label: "Support Center",     icon: ExternalLink, href: "/support" },
-];
-
-// ─── Info row ─────────────────────────────────────────────────────────────────
+// ─── Info row ────────────────────────────────────────────────────────────────
 
 const InfoRow = ({
     icon: Icon,
@@ -78,14 +46,14 @@ const InfoRow = ({
                 <Icon size={14} className="text-gray-500" />
             </div>
             <div className="min-w-0 flex-1">
-                <p className="text-[9px] text-gray-600 uppercase tracking-wider font-bold">{label}</p>
+                <p className="text-[13px] text-gray-600 uppercase tracking-wider font-bold">{label}</p>
                 <p className="text-xs font-bold text-white truncate">{value}</p>
             </div>
             {verified && <CheckCircle2 size={14} className="text-emerald-400 shrink-0" />}
             {copyable && (
                 <button
                     onClick={handleCopy}
-                    className="shrink-0 h-7 px-2 rounded-lg bg-white/4 border border-white/6 flex items-center gap-1 text-[8px] font-bold text-gray-500 hover:text-emerald-400 hover:border-emerald-500/30 transition-all"
+                    className="shrink-0 h-7 px-2 rounded-lg bg-white/4 border border-white/6 flex items-center gap-1 text-[12px] font-bold text-gray-500 hover:text-emerald-400 hover:border-emerald-500/30 transition-all"
                 >
                     <Copy size={10} />
                     {copied ? "Copied" : "Copy"}
@@ -95,16 +63,159 @@ const InfoRow = ({
     );
 };
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+// ─── Small copy button helper ────────────────────────────────────────────────
+
+const InfoCopyBtn = ({ value }: { value: string }) => {
+    const [copied, setCopied] = useState(false);
+    const handleCopy = async () => {
+        await navigator.clipboard.writeText(value);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+    return (
+        <button
+            onClick={handleCopy}
+            className={`h-9 px-3.5 rounded-xl flex items-center gap-1.5 text-[13px] font-black uppercase tracking-wider transition-all ${
+                copied
+                    ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-400"
+                    : "bg-white/5 border border-white/8 text-gray-500 hover:text-emerald-400 hover:border-emerald-500/30"
+            }`}
+        >
+            <Copy size={11} />
+            {copied ? "Copied" : "Copy"}
+        </button>
+    );
+};
+
+// ─── Quick links ─────────────────────────────────────────────────────────────
+
+const QUICK_LINKS = [
+    { label: "Account Settings",   icon: Settings,    href: "/settings" },
+    { label: "KYC Verification",   icon: Shield,      href: "/kyc" },
+    { label: "Transaction History", icon: Clock,       href: "/transactions" },
+    { label: "Support Center",     icon: ExternalLink, href: "/support" },
+];
+
+// ─── Main ────────────────────────────────────────────────────────────────────
 
 const Profile = () => {
-    const [pinModal, setPinModal] = useState<{ open: boolean; mode: "create" | "change" | "verify" }>({ open: false, mode: "create" });
-    const [hasPin, setHasPin]     = useState(false);
+    const { user: authUser, logout, refreshUser } = useAuth();
+    const { ytpBalance, inrBalance } = useWallet();
 
-    const handlePinSuccess = () => {
+    const [pinModal, setPinModal] = useState<{ open: boolean; mode: "create" | "change" | "verify" }>({ open: false, mode: "create" });
+    const [hasPin, setHasPin]     = useState(authUser?.pin_status ?? false);
+    const [balCurrency, setBalCurrency] = useState<"YTP" | "INR">("YTP");
+
+    // KYC details for address/dob
+    const [kycData, setKycData] = useState<{
+        district: string | null;
+        state: string | null;
+        country: string | null;
+        dob: string | null;
+        kycDate: string | null;
+        kycStatus: string;
+    }>({ district: null, state: null, country: null, dob: null, kycDate: null, kycStatus: "—" });
+
+    const [referralCodeFromApi, setReferralCodeFromApi] = useState("");
+
+    // Sync hasPin
+    useEffect(() => {
+        if (authUser?.pin_status) setHasPin(true);
+    }, [authUser?.pin_status]);
+
+    // Fetch KYC + Referral data
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [statusRes, listRes, refRes] = await Promise.allSettled([
+                    api.get(ENDPOINTS.KYC_STATUS),
+                    api.get(ENDPOINTS.KYC_LIST),
+                    api.get(ENDPOINTS.USER_REFERRAL),
+                ]);
+
+                // KYC
+                const statusData = statusRes.status === "fulfilled" ? statusRes.value.data?.data : null;
+
+                let details: any = {};
+                if (listRes.status === "fulfilled") {
+                    const raw = listRes.value.data?.data ?? listRes.value.data;
+                    if (Array.isArray(raw)) {
+                        const uid = statusData?.user_id || authUser?.id;
+                        details = raw.find((k: any) => k.user === uid || k.user_id === uid) || raw[raw.length - 1] || {};
+                    } else if (raw && typeof raw === "object") {
+                        details = raw;
+                    }
+                }
+
+                const rawStatus = (statusData?.kyc_status || statusData?.status || "").toUpperCase();
+                const isApproved = ["APPROVED", "COMPLETED", "VERIFIED"].includes(rawStatus);
+
+                setKycData({
+                    district: details.district || null,
+                    state:    details.state || null,
+                    country:  details.country || null,
+                    dob:      details.dob || null,
+                    kycDate:  details.created_at || details.updated_at || null,
+                    kycStatus: isApproved ? "Verified" : rawStatus || "—",
+                });
+
+                // Referral
+                if (refRes.status === "fulfilled") {
+                    const refData = refRes.value.data?.data ?? refRes.value.data;
+                    const code = refData?.code || refData?.referral_code || "";
+                    if (code) setReferralCodeFromApi(code);
+                }
+            } catch { /* silent */ }
+        };
+
+        fetchData();
+    }, [authUser?.id]);
+
+    const handlePinSuccess = async () => {
         setPinModal({ open: false, mode: "create" });
-        if (!hasPin) setHasPin(true);
+        setHasPin(true);
+        const current = getUserData();
+        if (current) setUserData({ ...current, pin_status: true });
+        await refreshUser();
     };
+
+    // Derived
+    const fullName     = authUser ? `${authUser.first_name} ${authUser.last_name}`.trim() : "—";
+    const initials     = authUser ? `${authUser.first_name?.[0] || ""}${authUser.last_name?.[0] || ""}`.toUpperCase() || "U" : "U";
+    const userEmail    = authUser?.email || "—";
+    const userPhone    = authUser?.phone_no || "—";
+    const userId       = authUser ? `YTP-${String(authUser.id).padStart(8, "0")}` : "—";
+    const referralCode = referralCodeFromApi || authUser?.referral_id || "—";
+    const referredBy   = authUser?.referred_by_name || null;
+
+    // Address from KYC
+    const addressParts = [kycData.district, kycData.state, kycData.country].filter(Boolean);
+    const address = addressParts.length > 0 ? addressParts.join(", ") : "—";
+
+    // DOB from KYC
+    const dob = kycData.dob || "—";
+
+    // KYC completed date
+    const kycCompletedDate = kycData.kycDate
+        ? new Date(kycData.kycDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+        : "—";
+
+    // Balance display
+    const balanceDisplay = balCurrency === "YTP"
+        ? `${ytpBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })} YTP`
+        : `₹${inrBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    const STATS = [
+        { label: "Total Balance",    value: balanceDisplay, icon: Wallet,     color: "text-emerald-400", toggle: true },
+        { label: "Total Staked",     value: "0 YTP",        icon: TrendingUp, color: "text-amber-400" },
+        { label: "Referral Earned",  value: "0 YTP",        icon: Users,      color: "text-violet-400" },
+        { label: "Referred By",      value: referredBy || "None", icon: Clock, color: "text-sky-400" },
+    ];
+
+    const ACTIVITY = [
+        { label: "KYC Completed",  value: kycCompletedDate },
+        { label: "KYC Status",     value: kycData.kycStatus },
+    ];
 
     return (
         <div className="w-full max-w-7xl mx-auto px-4 md:px-6 py-8 space-y-6">
@@ -125,39 +236,31 @@ const Profile = () => {
                 className="rounded-3xl border border-white/6 p-6 relative overflow-hidden"
                 style={{ background: "rgba(10,26,15,0.7)" }}
             >
-                {/* Background gradient */}
                 <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.08) 0%, transparent 50%)" }} />
 
                 <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-start gap-5">
-                    {/* Avatar */}
                     <div className="relative">
                         <div className="h-20 w-20 rounded-2xl bg-linear-to-br from-emerald-400 to-green-600 flex items-center justify-center text-white text-2xl font-black shadow-xl shadow-emerald-500/20">
-                            {USER.initials}
+                            {initials}
                         </div>
                         <button className="absolute -bottom-1 -right-1 h-7 w-7 rounded-lg bg-emerald-500 flex items-center justify-center text-black shadow-lg shadow-emerald-500/30 hover:bg-emerald-400 transition-all">
                             <Camera size={12} />
                         </button>
                     </div>
 
-                    {/* Info */}
                     <div className="flex-1 text-center sm:text-left min-w-0">
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
-                            <h1 className="text-xl font-black text-white tracking-tight">{USER.name}</h1>
+                            <h1 className="text-xl font-black text-white tracking-tight">{fullName}</h1>
                             <div className="flex items-center gap-2 justify-center sm:justify-start">
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-[8px] font-black text-emerald-400 uppercase tracking-widest">
-                                    <CheckCircle2 size={9} /> {USER.kycStatus}
-                                </span>
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-amber-500/20 bg-amber-500/10 text-[8px] font-black text-amber-400 uppercase tracking-widest">
-                                    <Star size={9} /> {USER.tier}
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-[12px] font-black text-emerald-400 uppercase tracking-widest">
+                                    <CheckCircle2 size={9} /> Verified
                                 </span>
                             </div>
                         </div>
-                        <p className="text-[10px] text-gray-500 font-mono">{USER.uid}</p>
-                        <p className="text-[10px] text-gray-600 mt-1">Member since {USER.joined}</p>
+                        <p className="text-[12px] text-gray-500 font-mono">{userId}</p>
                     </div>
 
-                    {/* Edit button */}
-                    <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/8 text-[10px] font-black text-gray-400 uppercase tracking-widest hover:border-emerald-500/30 hover:text-emerald-400 transition-all shrink-0"
+                    <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/8 text-[12px] font-black text-gray-400 uppercase tracking-widest hover:border-emerald-500/30 hover:text-emerald-400 transition-all shrink-0"
                         style={{ background: "rgba(5,13,7,0.6)" }}
                     >
                         <Edit3 size={12} />
@@ -182,8 +285,18 @@ const Profile = () => {
                         <div className="h-9 w-9 rounded-xl bg-white/5 border border-white/8 flex items-center justify-center shrink-0">
                             <s.icon size={16} className={s.color} />
                         </div>
-                        <div className="min-w-0">
-                            <p className="text-[9px] text-gray-600 uppercase tracking-wider font-bold truncate">{s.label}</p>
+                        <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                                <p className="text-[13px] text-gray-600 uppercase tracking-wider font-bold truncate">{s.label}</p>
+                                {s.toggle && (
+                                    <button
+                                        onClick={() => setBalCurrency((c) => c === "YTP" ? "INR" : "YTP")}
+                                        className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-md hover:bg-emerald-500/20 transition-all shrink-0"
+                                    >
+                                        {balCurrency}
+                                    </button>
+                                )}
+                            </div>
                             <p className="text-sm font-black text-white truncate">{s.value}</p>
                         </div>
                     </div>
@@ -200,7 +313,6 @@ const Profile = () => {
                     transition={{ delay: 0.1, duration: 0.4 }}
                     className="lg:col-span-3 space-y-5"
                 >
-                    {/* Personal information */}
                     <div
                         className="rounded-3xl border border-white/6 p-6 space-y-1"
                         style={{ background: "rgba(10,26,15,0.7)" }}
@@ -210,12 +322,12 @@ const Profile = () => {
                             <h2 className="text-sm font-black text-white tracking-wide">Personal Information</h2>
                         </div>
 
-                        <InfoRow icon={User}     label="Full Name"      value={USER.name} />
-                        <InfoRow icon={Mail}     label="Email Address"  value={USER.email}   verified />
-                        <InfoRow icon={Phone}    label="Phone Number"   value={USER.phone}   verified />
-                        <InfoRow icon={MapPin}   label="Address"        value={USER.address} />
-                        <InfoRow icon={Calendar} label="Date of Birth"  value={USER.dob} />
-                        <InfoRow icon={Shield}   label="KYC Status"     value={USER.kycStatus} verified />
+                        <InfoRow icon={User}     label="Full Name"      value={fullName} />
+                        <InfoRow icon={Mail}     label="Email Address"  value={userEmail}  verified />
+                        <InfoRow icon={Phone}    label="Phone Number"   value={userPhone}  verified />
+                        <InfoRow icon={MapPin}   label="Address"        value={address} />
+                        <InfoRow icon={Calendar} label="Date of Birth"  value={dob} />
+                        <InfoRow icon={Shield}   label="KYC Status"     value={kycData.kycStatus} verified={kycData.kycStatus === "Verified"} />
                     </div>
 
                     {/* Referral section */}
@@ -233,17 +345,17 @@ const Profile = () => {
                             style={{ background: "linear-gradient(135deg,rgba(16,185,129,0.06) 0%,rgba(16,185,129,0.02) 100%)" }}
                         >
                             <div>
-                                <p className="text-[9px] text-gray-600 uppercase tracking-wider font-bold mb-1">Your Referral Code</p>
-                                <p className="text-lg font-black text-emerald-400 font-mono tracking-wider">{USER.referralCode}</p>
+                                <p className="text-[13px] text-gray-600 uppercase tracking-wider font-bold mb-1">Your Referral Code</p>
+                                <p className="text-lg font-black text-emerald-400 font-mono tracking-wider">{referralCode}</p>
                             </div>
-                            <InfoCopyBtn value={USER.referralCode} />
+                            <InfoCopyBtn value={referralCode} />
                         </div>
 
                         <div className="grid grid-cols-3 gap-3">
                             {[
-                                { label: "Total Referrals", value: "5",    icon: Users },
-                                { label: "Active Users",    value: "3",    icon: CheckCircle2 },
-                                { label: "Earned",          value: "50 YTP", icon: Award },
+                                { label: "Total Referrals", value: "0",     icon: Users },
+                                { label: "Active Users",    value: "0",     icon: CheckCircle2 },
+                                { label: "Earned",          value: "0 YTP", icon: Award },
                             ].map((r, i) => (
                                 <div
                                     key={i}
@@ -251,7 +363,7 @@ const Profile = () => {
                                     style={{ background: "rgba(5,13,7,0.6)" }}
                                 >
                                     <r.icon size={14} className="text-emerald-400 mx-auto mb-1.5" />
-                                    <p className="text-[8px] text-gray-600 uppercase tracking-wider font-bold">{r.label}</p>
+                                    <p className="text-[12px] text-gray-600 uppercase tracking-wider font-bold">{r.label}</p>
                                     <p className="text-sm font-black text-white">{r.value}</p>
                                 </div>
                             ))}
@@ -273,14 +385,14 @@ const Profile = () => {
                     >
                         <div className="flex items-center gap-2.5">
                             <Clock size={16} className="text-emerald-400" />
-                            <h2 className="text-sm font-black text-white tracking-wide">Recent Activity</h2>
+                            <h2 className="text-sm font-black text-white tracking-wide">KYC Info</h2>
                         </div>
 
                         <div className="space-y-0">
                             {ACTIVITY.map((a, i) => (
                                 <div key={i} className="flex items-center justify-between py-2.5 border-b border-white/4 last:border-0">
-                                    <span className="text-[11px] text-gray-500 font-medium">{a.label}</span>
-                                    <span className="text-[11px] font-bold text-white">{a.value}</span>
+                                    <span className="text-[13px] text-gray-500 font-medium">{a.label}</span>
+                                    <span className="text-[13px] font-bold text-white">{a.value}</span>
                                 </div>
                             ))}
                         </div>
@@ -303,7 +415,7 @@ const Profile = () => {
                                         <div className="h-8 w-8 rounded-lg bg-white/4 border border-white/6 flex items-center justify-center shrink-0 group-hover:border-emerald-500/20 transition-all">
                                             <link.icon size={14} className="text-gray-500 group-hover:text-emerald-400 transition-colors" />
                                         </div>
-                                        <span className="text-[11px] font-bold text-gray-400 flex-1 group-hover:text-white transition-colors">{link.label}</span>
+                                        <span className="text-[13px] font-bold text-gray-400 flex-1 group-hover:text-white transition-colors">{link.label}</span>
                                         <ChevronRight size={14} className="text-gray-700 group-hover:text-emerald-400 transition-colors" />
                                     </div>
                                 </Link>
@@ -332,10 +444,10 @@ const Profile = () => {
                                 {hasPin ? <CheckCircle2 size={16} /> : <KeyRound size={16} />}
                             </div>
                             <div className="min-w-0 flex-1">
-                                <p className={`text-[11px] font-bold ${hasPin ? "text-emerald-400" : "text-amber-400"}`}>
+                                <p className={`text-[13px] font-bold ${hasPin ? "text-emerald-400" : "text-amber-400"}`}>
                                     {hasPin ? "PIN is active" : "PIN not set"}
                                 </p>
-                                <p className="text-[9px] text-gray-600 mt-0.5">
+                                <p className="text-[13px] text-gray-600 mt-0.5">
                                     {hasPin
                                         ? "Your 4-digit PIN secures all transactions"
                                         : "Set a PIN to secure withdrawals and transfers"}
@@ -343,11 +455,11 @@ const Profile = () => {
                             </div>
                         </div>
 
-                        <div className={`grid gap-2 ${hasPin ? "grid-cols-2" : "grid-cols-1"}`}>
+                        <div className={`grid gap-2 ${hasPin ? "grid-cols-1" : "grid-cols-1"}`}>
                             {!hasPin ? (
                                 <button
                                     onClick={() => setPinModal({ open: true, mode: "create" })}
-                                    className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(16,185,129,0.3)] active:scale-[0.98] transition-all"
+                                    className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-black text-[12px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(16,185,129,0.3)] active:scale-[0.98] transition-all"
                                 >
                                     <Lock size={13} /> Create PIN
                                 </button>
@@ -355,24 +467,24 @@ const Profile = () => {
                                 <>
                                     <button
                                         onClick={() => setPinModal({ open: true, mode: "change" })}
-                                        className="py-3 rounded-xl border border-white/8 text-white font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:border-emerald-500/30 hover:bg-emerald-500/5 active:scale-[0.98] transition-all"
+                                        className="py-3 rounded-xl border border-white/8 text-white font-black text-[12px] uppercase tracking-widest flex items-center justify-center gap-2 hover:border-emerald-500/30 hover:bg-emerald-500/5 active:scale-[0.98] transition-all"
                                         style={{ background: "rgba(5,13,7,0.6)" }}
                                     >
                                         <KeyRound size={13} /> Change
                                     </button>
-                                    <button
+                                    {/* <button
                                         onClick={() => setPinModal({ open: true, mode: "verify" })}
-                                        className="py-3 rounded-xl border border-white/8 text-white font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:border-emerald-500/30 hover:bg-emerald-500/5 active:scale-[0.98] transition-all"
+                                        className="py-3 rounded-xl border border-white/8 text-white font-black text-[12px] uppercase tracking-widest flex items-center justify-center gap-2 hover:border-emerald-500/30 hover:bg-emerald-500/5 active:scale-[0.98] transition-all"
                                         style={{ background: "rgba(5,13,7,0.6)" }}
                                     >
                                         <Shield size={13} /> Test PIN
-                                    </button>
+                                    </button> */}
                                 </>
                             )}
                         </div>
                     </div>
 
-                    {/* Security & Tier */}
+                    {/* Account Security */}
                     <div
                         className="rounded-3xl border border-white/6 p-6 space-y-4"
                         style={{ background: "rgba(10,26,15,0.7)" }}
@@ -385,14 +497,14 @@ const Profile = () => {
                         <div className="space-y-2.5">
                             {[
                                 { label: "Transaction PIN",  status: hasPin ? "Active" : "Not Set", ok: hasPin },
-                                { label: "Two-Factor Auth", status: "Enabled",  ok: true },
+                                { label: "Two-Factor Auth", status: authUser?.google2fa_enable ? "Enabled" : "Disabled", ok: !!authUser?.google2fa_enable },
                                 { label: "Email Verified",  status: "Verified", ok: true },
                                 { label: "Phone Verified",  status: "Verified", ok: true },
-                                { label: "KYC Level",       status: "Advanced", ok: true },
+                                { label: "KYC Level",       status: kycData.kycStatus === "Verified" ? "Advanced" : "Pending", ok: kycData.kycStatus === "Verified" },
                             ].map((s, i) => (
                                 <div key={i} className="flex items-center justify-between py-2 border-b border-white/4 last:border-0">
-                                    <span className="text-[11px] text-gray-500 font-medium">{s.label}</span>
-                                    <span className={`inline-flex items-center gap-1 text-[10px] font-bold ${s.ok ? "text-emerald-400" : "text-amber-400"}`}>
+                                    <span className="text-[13px] text-gray-500 font-medium">{s.label}</span>
+                                    <span className={`inline-flex items-center gap-1 text-[12px] font-bold ${s.ok ? "text-emerald-400" : "text-amber-400"}`}>
                                         {s.ok ? <CheckCircle2 size={10} /> : <AlertCircle size={10} />}
                                         {s.status}
                                     </span>
@@ -402,7 +514,9 @@ const Profile = () => {
                     </div>
 
                     {/* Logout */}
-                    <button className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl border border-red-500/15 text-red-400 font-black text-[11px] uppercase tracking-widest hover:bg-red-500/5 hover:border-red-500/25 transition-all"
+                    <button
+                        onClick={logout}
+                        className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl border border-red-500/15 text-red-400 font-black text-[13px] uppercase tracking-widest hover:bg-red-500/5 hover:border-red-500/25 transition-all"
                         style={{ background: "rgba(5,13,7,0.6)" }}
                     >
                         <LogOut size={14} />
@@ -411,30 +525,6 @@ const Profile = () => {
                 </motion.div>
             </div>
         </div>
-    );
-};
-
-// ─── Small copy button helper ─────────────────────────────────────────────────
-
-const InfoCopyBtn = ({ value }: { value: string }) => {
-    const [copied, setCopied] = useState(false);
-    const handleCopy = async () => {
-        await navigator.clipboard.writeText(value);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
-    return (
-        <button
-            onClick={handleCopy}
-            className={`h-9 px-3.5 rounded-xl flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider transition-all ${
-                copied
-                    ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-400"
-                    : "bg-white/5 border border-white/8 text-gray-500 hover:text-emerald-400 hover:border-emerald-500/30"
-            }`}
-        >
-            <Copy size={11} />
-            {copied ? "Copied" : "Copy"}
-        </button>
     );
 };
 

@@ -1,68 +1,113 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     ArrowRight, ArrowDownUp, Wallet, Send,
     IndianRupee, Coins, Shield, Clock,
-    Receipt, AlertCircle, CheckCircle2, Users,
-    QrCode, Scan,
+    Receipt, AlertCircle, CheckCircle2,
+    Loader2,
 } from "lucide-react";
-import Image from "next/image";
 import PinModal from "@/components/Include/PinModal";
+import { useWallet } from "@/context/WalletContext";
+import { useAuth } from "@/context/AuthContext";
+import toast from "react-hot-toast";
+import api from "@/lib/axios";
+import { ENDPOINTS } from "@/lib/endpoints";
+import { getApiError } from "@/lib/helpers";
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-const YTP_RATE  = 0.75; // 1 YTP = ₹0.75
-const BALANCE   = 966.0065;
-
-const RECENT_CONTACTS = [
-    { name: "Rahul S.",  address: "0x742d...5bD08", initials: "RS" },
-    { name: "Priya K.",  address: "0x1a2b...ef12",  initials: "PK" },
-    { name: "Amit P.",   address: "0x566f...6e76",  initials: "AP" },
-];
-
-// ─── Main ─────────────────────────────────────────────────────────────────────
+// ─── Main ────────────────────────────────────────────────────────────────────
 
 const Transfer = () => {
-    const [address, setAddress]     = useState("");
-    const [amount, setAmount]       = useState("");
-    const [inputMode, setInputMode] = useState<"ytp" | "inr">("ytp");
-    const [showPin, setShowPin]     = useState(false);
+    const { token } = useAuth();
+    const { ytpBalance, refresh: refreshWallet } = useWallet();
 
-    const numAmount = parseFloat(amount) || 0;
+    const [address, setAddress]         = useState("");
+    const [ytpInput, setYtpInput]       = useState("");
+    const [inrInput, setInrInput]       = useState("");
+    const [assetPriceINR, setAssetPriceINR] = useState(0);
+    const [showPin, setShowPin]         = useState(false);
+    const [sending, setSending]         = useState(false);
 
-    const { ytpAmount, inrAmount, fee, total } = useMemo(() => {
-        let ytp: number;
-        let inr: number;
-        if (inputMode === "ytp") {
-            ytp = numAmount;
-            inr = numAmount * YTP_RATE;
+    const selectedAsset = "YTP";
+    const balance = ytpBalance;
+
+    // Fetch coin value in INR
+    useEffect(() => {
+        if (!token) return;
+        (async () => {
+            try {
+                const res = await api.get(ENDPOINTS.COIN_VALUE(selectedAsset));
+                const data = res.data?.data ?? res.data;
+                if (data?.INR) {
+                    setAssetPriceINR(parseFloat(data.INR));
+                }
+            } catch { /* silent */ }
+        })();
+    }, [token, selectedAsset]);
+
+    // Two-way sync
+    const handleYtpChange = (val: string) => {
+        setYtpInput(val);
+        const num = parseFloat(val) || 0;
+        if (num > 0 && assetPriceINR > 0) {
+            setInrInput((num * assetPriceINR).toFixed(2));
         } else {
-            inr = numAmount;
-            ytp = numAmount / YTP_RATE;
+            setInrInput("");
         }
-        const feeVal = ytp * 0.005; // 0.5% fee
-        return {
-            ytpAmount: ytp,
-            inrAmount: inr,
-            fee: feeVal,
-            total: ytp + feeVal,
-        };
-    }, [numAmount, inputMode]);
+    };
 
-    const canTransfer   = address.trim().length > 10 && numAmount > 0 && total <= BALANCE;
-    const insufficient  = numAmount > 0 && total > BALANCE;
+    const handleInrChange = (val: string) => {
+        setInrInput(val);
+        const num = parseFloat(val) || 0;
+        if (num > 0 && assetPriceINR > 0) {
+            setYtpInput((num / assetPriceINR).toFixed(8));
+        } else {
+            setYtpInput("");
+        }
+    };
 
+    const numYtp        = parseFloat(ytpInput) || 0;
+    const numInr        = parseFloat(inrInput) || 0;
+    const canTransfer   = address.trim().length > 10 && numYtp > 0 && numYtp <= balance;
+    const insufficient  = numYtp > 0 && numYtp > balance;
+
+    // Transfer → show PIN modal
     const handleTransfer = () => {
         if (!canTransfer) return;
         setShowPin(true);
     };
 
-    const handlePinSuccess = () => {
+    // PIN verified → call send API
+    const handlePinSuccess = useCallback(async (pin: string) => {
         setShowPin(false);
-        // Transfer logic here
-    };
+        setSending(true);
+        try {
+            const res = await api.post(ENDPOINTS.SEND_AMOUNT, {
+                transaction_pin: pin,
+                amount: ytpInput,
+                ticker: selectedAsset,
+                address: address.trim(),
+            });
+
+            const data = res.data;
+            if (data?.success === false) {
+                toast.error(data.message || "Transaction failed!");
+                return false;
+            }
+
+            toast.success(data?.message || "Transaction successful!");
+            setAddress("");
+            setYtpInput("");
+            setInrInput("");
+            refreshWallet();
+        } catch (err: any) {
+            toast.error(getApiError(err));
+            return false;
+        } finally {
+            setSending(false);
+        }
+    }, [ytpInput, selectedAsset, address, refreshWallet]);
 
     return (
         <div className="w-full max-w-7xl mx-auto px-4 md:px-6 py-8 space-y-6">
@@ -74,7 +119,7 @@ const Transfer = () => {
                 onSuccess={handlePinSuccess}
                 mode="verify"
                 title="Authorize Transfer"
-                subtitle={`Sending ${ytpAmount.toFixed(2)} YTP`}
+                subtitle={`Sending ${numYtp.toFixed(2)} ${selectedAsset}`}
             />
 
             {/* ── Page header ── */}
@@ -84,16 +129,11 @@ const Transfer = () => {
                 transition={{ duration: 0.35 }}
                 className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
             >
-                <div className="flex items-center gap-3">
-                    <Image src="/logo.png" alt="YatriPay" width={120} height={32} className="h-7 w-auto object-contain" />
-                    <div className="h-5 w-px bg-white/10" />
-                    <div>
-                        <h1 className="text-xl font-black text-white tracking-tight">Transfer Fund</h1>
-                        <p className="text-[11px] text-gray-600 mt-0.5">Send YTP to any wallet address</p>
-                    </div>
+                <div>
+                    <h1 className="text-xl font-black text-white tracking-tight">Transfer Fund</h1>
+                    <p className="text-sm text-gray-600 mt-0.5">Send {selectedAsset} to any wallet address</p>
                 </div>
 
-                {/* Balance pill */}
                 <div
                     className="flex items-center gap-3 rounded-2xl border border-white/6 px-4 py-3"
                     style={{ background: "rgba(10,26,15,0.7)" }}
@@ -102,11 +142,32 @@ const Transfer = () => {
                         <Wallet size={15} className="text-emerald-400" />
                     </div>
                     <div>
-                        <p className="text-[9px] text-gray-600 uppercase tracking-wider font-bold">Available Balance</p>
-                        <p className="text-sm font-black text-white tabular-nums">{BALANCE.toLocaleString()} YTP</p>
+                        <p className="text-[12px] text-gray-600 uppercase tracking-wider font-bold">Available Balance</p>
+                        <p className="text-sm font-black text-white tabular-nums">
+                            {balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })} {selectedAsset}
+                        </p>
                     </div>
                 </div>
             </motion.div>
+
+            {/* Sending overlay */}
+            <AnimatePresence>
+                {sending && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-40 flex items-center justify-center"
+                        style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}
+                    >
+                        <div className="text-center space-y-3">
+                            <Loader2 size={36} className="text-emerald-400 animate-spin mx-auto" />
+                            <p className="text-sm font-black text-white">Processing Transfer...</p>
+                            <p className="text-[13px] text-gray-500">Please wait while we confirm your transaction</p>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* ── Main grid ── */}
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
@@ -123,18 +184,13 @@ const Transfer = () => {
                     <div className="space-y-3">
                         <div className="flex items-center gap-2.5">
                             <div className="h-5 w-1 rounded-full bg-emerald-400" />
-                            <h2 className="text-sm font-black text-white tracking-wide">Recipient</h2>
+                            <h2 className="text-base font-black text-white tracking-wide">Recipient</h2>
                         </div>
 
                         <div className="space-y-1.5">
-                            <div className="flex items-center justify-between px-1">
-                                <span className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">
-                                    Receiving Address
-                                </span>
-                                <button className="text-[9px] text-emerald-400 font-bold hover:underline flex items-center gap-1">
-                                    <Scan size={9} /> Scan QR
-                                </button>
-                            </div>
+                            <span className="text-[13px] lg:text-sm text-gray-500 uppercase tracking-wider font-bold px-1">
+                                Receiving Address
+                            </span>
                             <div className="relative group">
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-emerald-500 transition-colors">
                                     <Send size={16} strokeWidth={2} />
@@ -144,36 +200,9 @@ const Transfer = () => {
                                     value={address}
                                     onChange={(e) => setAddress(e.target.value)}
                                     placeholder="0x... or wallet address"
-                                    className="w-full rounded-2xl border border-white/8 py-3.5 pl-11 pr-5 text-sm font-mono font-semibold text-white placeholder-gray-700 focus:outline-none focus:border-emerald-500/50 transition-all"
+                                    className="w-full rounded-2xl border border-white/8 py-3.5 lg:py-4 pl-11 pr-5 text-sm lg:text-base font-mono font-semibold text-white placeholder-gray-700 focus:outline-none focus:border-emerald-500/50 transition-all"
                                     style={{ background: "rgba(5,13,7,0.8)" }}
                                 />
-                            </div>
-                        </div>
-
-                        {/* Recent contacts */}
-                        <div className="space-y-1.5">
-                            <p className="text-[9px] text-gray-600 uppercase tracking-wider font-bold px-1">Recent</p>
-                            <div className="flex gap-2 overflow-x-auto pb-1">
-                                {RECENT_CONTACTS.map((c, i) => (
-                                    <button
-                                        key={i}
-                                        onClick={() => setAddress(c.address)}
-                                        className={`shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl border transition-all ${
-                                            address === c.address
-                                                ? "border-emerald-400/50 bg-emerald-500/10"
-                                                : "border-white/6 hover:border-emerald-500/20"
-                                        }`}
-                                        style={address !== c.address ? { background: "rgba(5,13,7,0.6)" } : undefined}
-                                    >
-                                        <div className="h-6 w-6 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-[8px] font-black text-emerald-400">
-                                            {c.initials}
-                                        </div>
-                                        <div className="text-left">
-                                            <p className="text-[10px] font-bold text-white">{c.name}</p>
-                                            <p className="text-[8px] text-gray-600 font-mono">{c.address}</p>
-                                        </div>
-                                    </button>
-                                ))}
                             </div>
                         </div>
                     </div>
@@ -182,18 +211,18 @@ const Transfer = () => {
                     <div className="space-y-3">
                         <div className="flex items-center gap-2.5">
                             <div className="h-5 w-1 rounded-full bg-emerald-400" />
-                            <h2 className="text-sm font-black text-white tracking-wide">Amount</h2>
+                            <h2 className="text-base font-black text-white tracking-wide">Amount</h2>
                         </div>
 
                         {/* YTP input */}
                         <div className="space-y-1.5">
                             <div className="flex items-center justify-between px-1">
-                                <span className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">
-                                    YTP Amount
+                                <span className="text-[13px] lg:text-sm text-gray-500 uppercase tracking-wider font-bold">
+                                    {selectedAsset} Amount
                                 </span>
                                 <button
-                                    onClick={() => { setInputMode("ytp"); setAmount(Math.floor(BALANCE * 0.995).toString()); }}
-                                    className="text-[9px] text-emerald-400 font-bold hover:underline"
+                                    onClick={() => handleYtpChange(Math.floor(balance).toString())}
+                                    className="text-[13px] text-emerald-400 font-bold hover:underline"
                                 >
                                     MAX
                                 </button>
@@ -204,15 +233,14 @@ const Transfer = () => {
                                 </span>
                                 <input
                                     type="number"
-                                    value={inputMode === "ytp" ? amount : (ytpAmount > 0 ? ytpAmount.toFixed(4) : "")}
-                                    onChange={(e) => { setInputMode("ytp"); setAmount(e.target.value); }}
-                                    onFocus={() => setInputMode("ytp")}
+                                    value={ytpInput}
+                                    onChange={(e) => handleYtpChange(e.target.value)}
                                     placeholder="0.00"
                                     className="w-full rounded-2xl border border-white/8 py-4 pl-12 pr-16 text-xl font-black text-white placeholder-gray-700 focus:outline-none focus:border-emerald-500/50 transition-all"
                                     style={{ background: "rgba(5,13,7,0.8)" }}
                                 />
                                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-black text-emerald-500">
-                                    YTP
+                                    {selectedAsset}
                                 </span>
                             </div>
                         </div>
@@ -227,11 +255,11 @@ const Transfer = () => {
                         {/* INR input */}
                         <div className="space-y-1.5">
                             <div className="flex items-center justify-between px-1">
-                                <span className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">
+                                <span className="text-[13px] lg:text-sm text-gray-500 uppercase tracking-wider font-bold">
                                     INR Amount
                                 </span>
-                                <span className="text-[9px] text-gray-600">
-                                    1 YTP = <span className="text-emerald-400 font-bold">₹{YTP_RATE}</span>
+                                <span className="text-[13px] text-gray-600">
+                                    1 {selectedAsset} = <span className="text-emerald-400 font-bold">₹{assetPriceINR.toFixed(2)}</span>
                                 </span>
                             </div>
                             <div className="relative">
@@ -240,9 +268,8 @@ const Transfer = () => {
                                 </span>
                                 <input
                                     type="number"
-                                    value={inputMode === "inr" ? amount : (inrAmount > 0 ? inrAmount.toFixed(2) : "")}
-                                    onChange={(e) => { setInputMode("inr"); setAmount(e.target.value); }}
-                                    onFocus={() => setInputMode("inr")}
+                                    value={inrInput}
+                                    onChange={(e) => handleInrChange(e.target.value)}
                                     placeholder="0.00"
                                     className="w-full rounded-2xl border border-white/8 py-4 pl-12 pr-16 text-xl font-black text-white placeholder-gray-700 focus:outline-none focus:border-emerald-500/50 transition-all"
                                     style={{ background: "rgba(5,13,7,0.8)" }}
@@ -265,8 +292,8 @@ const Transfer = () => {
                             >
                                 <div className="flex items-center gap-2 p-3 rounded-xl border border-red-500/20 bg-red-500/5">
                                     <AlertCircle size={13} className="text-red-400 shrink-0" />
-                                    <span className="text-[10px] text-red-400 font-bold">
-                                        Insufficient balance. You need {(total - BALANCE).toFixed(4)} more YTP.
+                                    <span className="text-[13px] text-red-400 font-bold">
+                                        Insufficient balance. You need {(numYtp - balance).toFixed(4)} more {selectedAsset}.
                                     </span>
                                 </div>
                             </motion.div>
@@ -276,9 +303,9 @@ const Transfer = () => {
                     {/* Transfer button */}
                     <button
                         onClick={handleTransfer}
-                        disabled={!canTransfer}
-                        className={`w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2.5 transition-all duration-200 ${
-                            canTransfer
+                        disabled={!canTransfer || sending}
+                        className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2.5 transition-all duration-200 ${
+                            canTransfer && !sending
                                 ? "bg-emerald-500 hover:bg-emerald-400 text-black shadow-[0_8px_24px_rgba(16,185,129,0.3)] hover:shadow-[0_8px_32px_rgba(16,185,129,0.45)] active:scale-[0.98]"
                                 : "bg-white/4 border border-white/8 text-gray-600 cursor-not-allowed"
                         }`}
@@ -288,7 +315,7 @@ const Transfer = () => {
                     </button>
                 </motion.div>
 
-                {/* ── RIGHT: Summary + info (2 cols) ── */}
+                {/* ── RIGHT: Summary (2 cols) ── */}
                 <motion.div
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -302,53 +329,43 @@ const Transfer = () => {
                     >
                         <div className="flex items-center gap-2.5">
                             <Receipt size={16} className="text-emerald-400" />
-                            <h2 className="text-sm font-black text-white tracking-wide">Transfer Summary</h2>
+                            <h2 className="text-base font-black text-white tracking-wide">Transfer Summary</h2>
                         </div>
 
                         <AnimatePresence mode="wait">
                             <motion.div
-                                key={`${numAmount}-${inputMode}`}
+                                key={`${numYtp}-${address}`}
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
                                 transition={{ duration: 0.15 }}
                             >
                                 {[
-                                    { label: "Sending",         value: numAmount > 0 ? `${ytpAmount.toFixed(4)} YTP` : "—" },
-                                    { label: "Value (INR)",     value: numAmount > 0 ? `₹${inrAmount.toFixed(2)}` : "—" },
-                                    { label: "Network Fee (0.5%)", value: numAmount > 0 ? `${fee.toFixed(4)} YTP` : "—" },
-                                    { label: "Recipient",       value: address.trim() ? `${address.slice(0, 8)}...${address.slice(-4)}` : "—" },
+                                    { label: "Sending",     value: numYtp > 0 ? `${numYtp} ${selectedAsset}` : "—" },
+                                    { label: "Value (INR)", value: numInr > 0 ? `₹${numInr.toFixed(2)}` : "—" },
+                                    { label: "Recipient",   value: address.trim() ? `${address.slice(0, 10)}...${address.slice(-6)}` : "—" },
+                                    { label: "Network",     value: "YVM Chain" },
                                 ].map((row, i) => (
                                     <div key={i} className="flex items-center justify-between py-2.5 border-b border-white/5 last:border-0">
-                                        <span className="text-[11px] text-gray-500 font-medium">{row.label}</span>
-                                        <span className="text-xs font-bold text-white">{row.value}</span>
+                                        <span className="text-[13px] text-gray-500 font-medium">{row.label}</span>
+                                        <span className="text-sm font-bold text-white truncate max-w-32 text-right">{row.value}</span>
                                     </div>
                                 ))}
                             </motion.div>
                         </AnimatePresence>
 
-                        {/* Total */}
                         <div
                             className="rounded-2xl border border-emerald-500/20 p-4"
                             style={{ background: "linear-gradient(135deg,rgba(16,185,129,0.08) 0%,rgba(16,185,129,0.03) 100%)" }}
                         >
-                            <p className="text-[9px] text-emerald-400/60 uppercase tracking-widest font-black mb-1">Total Deducted</p>
-                            <AnimatePresence mode="wait">
-                                <motion.p
-                                    key={total.toFixed(4)}
-                                    initial={{ opacity: 0, y: 4 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -4 }}
-                                    transition={{ duration: 0.18 }}
-                                    className="text-2xl font-black text-white tabular-nums"
-                                >
-                                    {numAmount > 0 ? `${total.toFixed(4)} YTP` : "—"}
-                                </motion.p>
-                            </AnimatePresence>
+                            <p className="text-[12px] text-emerald-400/60 uppercase tracking-widest font-black mb-1">Total Deducted</p>
+                            <p className="text-2xl font-black text-white tabular-nums">
+                                {numYtp > 0 ? `${numYtp} ${selectedAsset}` : "—"}
+                            </p>
                         </div>
                     </div>
 
-                    {/* Remaining balance */}
+                    {/* After transfer */}
                     <div
                         className="rounded-3xl border border-white/6 p-6 space-y-3"
                         style={{ background: "rgba(10,26,15,0.7)" }}
@@ -360,43 +377,42 @@ const Transfer = () => {
 
                         <div className="grid grid-cols-2 gap-3">
                             <div className="rounded-xl border border-white/5 p-3 text-center" style={{ background: "rgba(5,13,7,0.6)" }}>
-                                <p className="text-[8px] text-gray-600 uppercase tracking-wider font-bold">Current</p>
-                                <p className="text-sm font-black text-white tabular-nums">{BALANCE.toLocaleString()}</p>
-                                <p className="text-[8px] text-gray-600 font-bold">YTP</p>
+                                <p className="text-[11px] text-gray-600 uppercase tracking-wider font-bold">Current</p>
+                                <p className="text-sm font-black text-white tabular-nums">{balance.toLocaleString(undefined, { maximumFractionDigits: 4 })}</p>
+                                <p className="text-[11px] text-gray-600 font-bold">{selectedAsset}</p>
                             </div>
                             <div className="rounded-xl border border-white/5 p-3 text-center" style={{ background: "rgba(5,13,7,0.6)" }}>
-                                <p className="text-[8px] text-gray-600 uppercase tracking-wider font-bold">Remaining</p>
-                                <p className={`text-sm font-black tabular-nums ${numAmount > 0 && !insufficient ? "text-emerald-400" : "text-white"}`}>
-                                    {numAmount > 0 ? (BALANCE - total).toFixed(4) : BALANCE.toLocaleString()}
+                                <p className="text-[11px] text-gray-600 uppercase tracking-wider font-bold">Remaining</p>
+                                <p className={`text-sm font-black tabular-nums ${numYtp > 0 && !insufficient ? "text-emerald-400" : "text-white"}`}>
+                                    {numYtp > 0 ? Math.max(0, balance - numYtp).toFixed(4) : balance.toLocaleString(undefined, { maximumFractionDigits: 4 })}
                                 </p>
-                                <p className="text-[8px] text-gray-600 font-bold">YTP</p>
+                                <p className="text-[11px] text-gray-600 font-bold">{selectedAsset}</p>
                             </div>
                         </div>
                     </div>
 
-                    {/* Security & trust */}
+                    {/* Security */}
                     <div
                         className="rounded-3xl border border-white/6 p-5 space-y-2.5"
                         style={{ background: "rgba(10,26,15,0.7)" }}
                     >
                         {[
-                            { icon: Shield,       title: "PIN Protected",        desc: "Every transfer requires your 4-digit PIN" },
-                            { icon: Clock,        title: "Instant Transfer",     desc: "On-chain transfers complete within seconds" },
-                            { icon: CheckCircle2, title: "Verified Recipients",  desc: "Double-check the receiving address before sending" },
+                            { icon: Shield,       title: "PIN Protected",       desc: "Every transfer requires your 4-digit PIN" },
+                            { icon: Clock,        title: "Instant Transfer",    desc: "On-chain transfers complete within seconds" },
+                            { icon: CheckCircle2, title: "Verify Address",      desc: "Double-check the receiving address before sending" },
                         ].map((t, i) => (
                             <div key={i} className="flex items-start gap-3 p-2">
                                 <div className="h-7 w-7 rounded-lg bg-emerald-500/10 border border-emerald-500/15 flex items-center justify-center shrink-0 mt-0.5">
                                     <t.icon size={12} className="text-emerald-500" />
                                 </div>
                                 <div>
-                                    <p className="text-[10px] font-bold text-white">{t.title}</p>
-                                    <p className="text-[9px] text-gray-600 leading-relaxed">{t.desc}</p>
+                                    <p className="text-sm font-bold text-white">{t.title}</p>
+                                    <p className="text-[13px] text-gray-600 leading-relaxed">{t.desc}</p>
                                 </div>
                             </div>
                         ))}
                     </div>
                 </motion.div>
-
             </div>
         </div>
     );

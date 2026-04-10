@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(find components/ -name \"*.tsx\" -exec sed -i 's/text-\\\\[8px\\\\]/text-[10px]/g' {} +)",
+      "Bash(find components/ -name \"*.tsx\" -exec sed -i 's/text-\\\\[9px\\\\]/text-[11px]/g' {} +)",
+      "Bash(find components/ -name \"*.tsx\" -exec sed -i 's/text-\\\\[11px\\\\]/text-[13px]/g' {} +)",
+      "Bash(find components/ -name \"*.tsx\" -exec sed -i 's/text-\\\\[10px\\\\]/text-[12px]/g' {} +)",
+      "Bash(find app/ -name \"*.tsx\" -exec sed -i 's/text-\\\\[8px\\\\]/text-[12px]/g; s/text-\\\\[9px\\\\]/text-[13px]/g; s/text-\\\\[10px\\\\]/text-[12px]/g; s/text-\\\\[11px\\\\]/text-[13px]/g' {} +)",
+      "Bash(grep -c 'text-\\\\[8px\\\\]\\\\|text-\\\\[9px\\\\]\\\\|text-\\\\[10px\\\\]\\\\|text-\\\\[11px\\\\]' components/**/*.tsx)",
+      "Bash(grep -v ':0$')",
+      "Bash(npx next:*)"
+    ]
+  }
+}

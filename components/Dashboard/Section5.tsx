@@ -52,7 +52,7 @@ const Section5 = () => {
                                 {/* Text */}
                                 <div className="text-center">
                                     <p className="text-white font-bold text-lg leading-none">Ready to Invite?</p>
-                                    <p className="text-gray-500 text-[10px] mt-1 md:mt-2 uppercase tracking-tighter italic font-semibold">
+                                    <p className="text-gray-500 text-[12px] mt-1 md:mt-2 uppercase tracking-tighter italic font-semibold">
                                         Copy your unique link or share
                                     </p>
                                 </div>

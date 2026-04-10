@@ -44,7 +44,7 @@ const Section1 = () => {
                                     <div className={`p-3 rounded-xl bg-white/5 ${item.color}`}>
                                         <Icon className="w-6 h-6" />
                                     </div>
-                                    <p className="text-[10px] md:text-xs font-medium text-gray-300">{item.title}</p>
+                                    <p className="text-[12px] md:text-xs font-medium text-gray-300">{item.title}</p>
                                 </motion.div>
                             </Link>
                         );

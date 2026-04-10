@@ -59,7 +59,7 @@ const Section3 = () => {
                         <p className="text-gray-500 text-sm">Maximize your earnings with AI-powered plans</p>
                     </div>
                     <div className="hidden md:block">
-                        <span className="bg-green-500/10 text-green-500 text-[10px] font-bold px-3 py-1 rounded-full border border-green-500/20">
+                        <span className="bg-green-500/10 text-green-500 text-[12px] font-bold px-3 py-1 rounded-full border border-green-500/20">
                             LIVE APY: 50%
                         </span>
                     </div>
@@ -107,7 +107,7 @@ const Section3 = () => {
                             className="bg-[#111] border border-yellow-500/20 p-6 rounded-[2rem] flex items-center justify-between group hover:bg-yellow-500/[0.03] transition-all cursor-pointer"
                         >
                             <div className="space-y-1">
-                                <p className="text-yellow-500 font-bold text-[10px] uppercase tracking-[0.2em]">Mega Reward</p>
+                                <p className="text-yellow-500 font-bold text-[12px] uppercase tracking-[0.2em]">Mega Reward</p>
                                 <h3 className="text-xl font-bold text-white">Win ₹10,000</h3>
                                 <p className="text-gray-500 text-xs italic font-medium underline decoration-yellow-500/30">Get Staking Pass</p>
                             </div>
@@ -122,7 +122,7 @@ const Section3 = () => {
                             className="bg-[#111] border border-purple-500/20 p-6 rounded-[2rem] flex items-center justify-between group hover:bg-purple-500/[0.03] transition-all cursor-pointer"
                         >
                             <div className="space-y-1">
-                                <p className="text-purple-400 font-bold text-[10px] uppercase tracking-[0.2em]">Referral Bonus</p>
+                                <p className="text-purple-400 font-bold text-[12px] uppercase tracking-[0.2em]">Referral Bonus</p>
                                 <h3 className="text-xl font-bold text-white">20% Cashback</h3>
                                 <p className="text-gray-500 text-xs">On every new friend</p>
                             </div>
@@ -142,7 +142,7 @@ const Section3 = () => {
                             className={`p-4 rounded-[1.5rem] border ${offer.borderColor} bg-[#111] flex flex-col justify-between hover:bg-white/[0.02] transition-colors`}
                         >
                             <div>
-                                <p className={`text-[10px] font-black uppercase ${offer.labelColor}`}>{offer.label}</p>
+                                <p className={`text-[12px] font-black uppercase ${offer.labelColor}`}>{offer.label}</p>
                                 <h4 className="text-sm font-bold mt-1">{offer.title}</h4>
                             </div>
                             <p className="text-blue-400 text-xs mt-2 font-bold">{offer.cta} →</p>

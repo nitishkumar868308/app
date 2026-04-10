@@ -48,7 +48,7 @@ const MarketChart = () => {
             {/* Header row */}
             <div className="flex items-start justify-between mb-4">
                 <div>
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-gray-500 font-bold mb-1">
+                    <p className="text-[12px] uppercase tracking-[0.2em] text-gray-500 font-bold mb-1">
                         Market Analytics
                     </p>
                     <div className="flex items-end gap-2.5">
@@ -85,8 +85,8 @@ const MarketChart = () => {
 
             {/* Footer info */}
             <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/5">
-                <span className="text-[10px] text-gray-600">YTP / INR</span>
-                <span className="flex items-center gap-1.5 text-[10px] text-gray-600">
+                <span className="text-[12px] text-gray-600">YTP / INR</span>
+                <span className="flex items-center gap-1.5 text-[12px] text-gray-600">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />
                     Market is live
                 </span>

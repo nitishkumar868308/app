@@ -59,14 +59,14 @@ const YatriPayPage = () => {
                             key={i}
                             className="flex items-center gap-2 px-4 sm:px-6 border-r border-[#1F2E26] shrink-0"
                         >
-                            <span className="text-[10px] sm:text-[11px] font-extrabold">
+                            <span className="text-[12px] sm:text-[13px] font-extrabold">
                                 {t.name}
                             </span>
-                            <span className="text-[10px] sm:text-[11px] font-mono text-[#94A39A]">
+                            <span className="text-[12px] sm:text-[13px] font-mono text-[#94A39A]">
                                 {t.p}
                             </span>
                             <span
-                                className={`text-[9px] sm:text-[10px] font-extrabold ${t.u ? 'text-[#00C896]' : 'text-[#F0465A]'
+                                className={`text-[13px] sm:text-[12px] font-extrabold ${t.u ? 'text-[#00C896]' : 'text-[#F0465A]'
                                     }`}
                             >
                                 {t.c}
@@ -87,7 +87,7 @@ const YatriPayPage = () => {
                     </div>
                     <div className="flex items-center gap-4">
                         <div className="hidden md:block text-right mr-2">
-                            <p className="text-[10px] text-[#5C6E64] font-bold">Welcome,</p>
+                            <p className="text-[12px] text-[#5C6E64] font-bold">Welcome,</p>
                             <p className="text-xs font-bold text-[#00C896]">Nitish Kumar</p>
                         </div>
                         <div className="w-10 h-10 bg-[#111A15] border border-[#1F2E26] rounded-xl flex items-center justify-center cursor-pointer hover:border-[#00C896] transition-colors">
@@ -174,15 +174,15 @@ const YatriPayPage = () => {
                                     <div className="bg-[#111A15] border-[1.2px] border-[#5C6E64]/30 rounded-[24px] p-5 flex flex-col justify-between hover:border-[#00C896] transition-all group">
                                         <div>
                                             <h3 className="text-lg font-black text-white">LEARNER</h3>
-                                            <p className="text-[10px] text-[#5C6E64] mb-4">Start your journey</p>
+                                            <p className="text-[12px] text-[#5C6E64] mb-4">Start your journey</p>
 
                                             <div className="space-y-3 mb-6">
                                                 <div className="flex justify-between items-end">
-                                                    <span className="text-[10px] text-[#5C6E64] font-bold">APY</span>
+                                                    <span className="text-[12px] text-[#5C6E64] font-bold">APY</span>
                                                     <span className="text-2xl font-black text-[#00C896] leading-none">30%</span>
                                                 </div>
                                                 <div className="h-[1px] bg-[#5C6E64]/20 w-full" />
-                                                <div className="grid grid-cols-2 gap-2 text-[10px]">
+                                                <div className="grid grid-cols-2 gap-2 text-[12px]">
                                                     <div><p className="text-[#5C6E64]">Min. Stake</p><p className="font-bold text-white">500 YTP</p></div>
                                                     <div className="text-right"><p className="text-[#5C6E64]">Referral</p><p className="font-bold text-white">30% P.A.</p></div>
                                                     <div><p className="text-[#5C6E64]">Locking</p><p className="font-bold text-white">7 Days</p></div>
@@ -197,18 +197,18 @@ const YatriPayPage = () => {
 
                                     {/* 2. EARNER PLAN (Featured/Bestseller) */}
                                     <div className="bg-[#111A15] border-[1.5px] border-[#00C896] rounded-[24px] p-5 flex flex-col justify-between relative overflow-hidden group shadow-[0_0_30px_rgba(0,200,150,0.1)]">
-                                        <div className="absolute top-0 right-0 bg-[#00C896] text-black text-[9px] font-black px-3 py-1 rounded-bl-lg">BEST</div>
+                                        <div className="absolute top-0 right-0 bg-[#00C896] text-black text-[13px] font-black px-3 py-1 rounded-bl-lg">BEST</div>
                                         <div>
                                             <h3 className="text-lg font-black text-white">EARNER</h3>
-                                            <p className="text-[10px] text-[#5C6E64] mb-4">Boost your earnings</p>
+                                            <p className="text-[12px] text-[#5C6E64] mb-4">Boost your earnings</p>
 
                                             <div className="space-y-3 mb-6">
                                                 <div className="flex justify-between items-end">
-                                                    <span className="text-[10px] text-[#5C6E64] font-bold">APY</span>
+                                                    <span className="text-[12px] text-[#5C6E64] font-bold">APY</span>
                                                     <span className="text-2xl font-black text-[#00C896] leading-none">40%</span>
                                                 </div>
                                                 <div className="h-[1px] bg-[#00C896]/20 w-full" />
-                                                <div className="grid grid-cols-2 gap-2 text-[10px]">
+                                                <div className="grid grid-cols-2 gap-2 text-[12px]">
                                                     <div><p className="text-[#5C6E64]">Min. Stake</p><p className="font-bold text-white">10k YTP</p></div>
                                                     <div className="text-right"><p className="text-[#5C6E64]">Referral</p><p className="font-bold text-white">40% P.A.</p></div>
                                                     <div><p className="text-[#5C6E64]">Locking</p><p className="font-bold text-white">50 Days</p></div>
@@ -225,15 +225,15 @@ const YatriPayPage = () => {
                                     <div className="bg-[#111A15] border-[1.2px] border-[#5C6E64]/30 rounded-[24px] p-5 flex flex-col justify-between hover:border-[#00C896] transition-all group">
                                         <div>
                                             <h3 className="text-lg font-black text-white">TRAVELER</h3>
-                                            <p className="text-[10px] text-[#5C6E64] mb-4">Unlock premium rewards</p>
+                                            <p className="text-[12px] text-[#5C6E64] mb-4">Unlock premium rewards</p>
 
                                             <div className="space-y-3 mb-6">
                                                 <div className="flex justify-between items-end">
-                                                    <span className="text-[10px] text-[#5C6E64] font-bold">APY</span>
+                                                    <span className="text-[12px] text-[#5C6E64] font-bold">APY</span>
                                                     <span className="text-2xl font-black text-[#00C896] leading-none">50%</span>
                                                 </div>
                                                 <div className="h-[1px] bg-[#5C6E64]/20 w-full" />
-                                                <div className="grid grid-cols-2 gap-2 text-[10px]">
+                                                <div className="grid grid-cols-2 gap-2 text-[12px]">
                                                     <div><p className="text-[#5C6E64]">Min. Stake</p><p className="font-bold text-white">20k YTP</p></div>
                                                     <div className="text-right"><p className="text-[#5C6E64]">Referral</p><p className="font-bold text-white">50% P.A.</p></div>
                                                     <div><p className="text-[#5C6E64]">Locking</p><p className="font-bold text-white">100 Days</p></div>
@@ -277,7 +277,7 @@ const YatriPayPage = () => {
                                         {/* TOP */}
                                         <div className="flex justify-between items-start">
                                             <div>
-                                                <p className="text-[11px] text-[#F5A623] font-semibold tracking-widest">
+                                                <p className="text-[13px] text-[#F5A623] font-semibold tracking-widest">
                                                     EXCLUSIVE DROP
                                                 </p>
                                                 <h3 className="text-2xl font-extrabold leading-tight mt-1">
@@ -289,7 +289,7 @@ const YatriPayPage = () => {
                                             </div>
 
                                             {/* Badge */}
-                                            <span className="text-[10px] bg-[#F5A623] text-black px-3 py-1 rounded-full font-bold animate-pulse">
+                                            <span className="text-[12px] bg-[#F5A623] text-black px-3 py-1 rounded-full font-bold animate-pulse">
                                                 LIVE
                                             </span>
                                         </div>
@@ -315,7 +315,7 @@ const YatriPayPage = () => {
 
                                         <div className="rounded-2xl p-4 h-36 bg-[#06110D]/90 backdrop-blur-xl flex flex-col justify-between">
 
-                                            <p className="text-[10px] text-[#00C896] font-semibold tracking-wide">
+                                            <p className="text-[12px] text-[#00C896] font-semibold tracking-wide">
                                                 🎁 GIVEAWAY
                                             </p>
 
@@ -323,7 +323,7 @@ const YatriPayPage = () => {
                                                 Win <span className="text-white">iPhone</span> <br /> Lucky Draw
                                             </p>
 
-                                            <button className="bg-[#00C896] text-black text-[11px] font-bold py-2 rounded-lg transition hover:scale-105">
+                                            <button className="bg-[#00C896] text-black text-[13px] font-bold py-2 rounded-lg transition hover:scale-105">
                                                 Join Now
                                             </button>
                                         </div>
@@ -334,7 +334,7 @@ const YatriPayPage = () => {
 
                                         <div className="rounded-2xl p-4 h-36 bg-[#140708]/90 backdrop-blur-xl flex flex-col justify-between">
 
-                                            <p className="text-[10px] text-[#F0465A] font-semibold tracking-wide">
+                                            <p className="text-[12px] text-[#F0465A] font-semibold tracking-wide">
                                                 ⚡ BOOST
                                             </p>
 
@@ -342,7 +342,7 @@ const YatriPayPage = () => {
                                                 Up to <span className="text-white">1000% APY</span>
                                             </p>
 
-                                            <button className="bg-white text-black text-[11px] font-bold py-2 rounded-lg transition hover:scale-105">
+                                            <button className="bg-white text-black text-[13px] font-bold py-2 rounded-lg transition hover:scale-105">
                                                 Activate
                                             </button>
                                         </div>
@@ -360,7 +360,7 @@ const YatriPayPage = () => {
                             <div className="bg-[#111A15] border-[1.5px] border-[#00C896] rounded-[28px] p-6 relative overflow-hidden group transition-all duration-300">
 
                                 {/* Top Badge */}
-                                <div className="absolute top-0 right-0 bg-[#00C896] text-black text-[10px] font-black px-4 py-1 rounded-bl-xl">
+                                <div className="absolute top-0 right-0 bg-[#00C896] text-black text-[12px] font-black px-4 py-1 rounded-bl-xl">
                                     LIMITED REWARD
                                 </div>
 
@@ -376,7 +376,7 @@ const YatriPayPage = () => {
                                     {/* Reward Visual */}
                                     <div className="text-right">
                                         <div className="text-3xl font-black text-[#00C896] font-mono">+10</div>
-                                        <div className="text-[10px] font-bold text-[#00C896]/60 uppercase tracking-tighter">YTP PER FRIEND</div>
+                                        <div className="text-[12px] font-bold text-[#00C896]/60 uppercase tracking-tighter">YTP PER FRIEND</div>
                                     </div>
                                 </div>
 
@@ -417,15 +417,15 @@ const YatriPayPage = () => {
 
                 {/* BOTTOM NAV - Only visible on small screens */}
                 <nav className="md:hidden fixed bottom-0 left-0 w-full bg-[#040705]/95 backdrop-blur-xl border-t border-[#1F2E26] flex justify-around py-4 pb-8 z-[1000]">
-                    <a href="#" className="flex flex-col items-center gap-1 text-[10px] font-bold text-[#00C896]">
+                    <a href="#" className="flex flex-col items-center gap-1 text-[12px] font-bold text-[#00C896]">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /></svg>
                         Home
                     </a>
-                    <a href="#" className="flex flex-col items-center gap-1 text-[10px] font-bold text-[#5C6E64]">
+                    <a href="#" className="flex flex-col items-center gap-1 text-[12px] font-bold text-[#5C6E64]">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><path d="M16 8l-4 4-4-4" /></svg>
                         Stake
                     </a>
-                    <a href="#" className="flex flex-col items-center gap-1 text-[10px] font-bold text-[#5C6E64]">
+                    <a href="#" className="flex flex-col items-center gap-1 text-[12px] font-bold text-[#5C6E64]">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
                         Profile
                     </a>

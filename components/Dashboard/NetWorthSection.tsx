@@ -3,17 +3,24 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { TrendingUp, Eye, EyeOff } from "lucide-react";
+import { useWallet } from "@/context/WalletContext";
 
 type Currency = "INR" | "YTP";
 
-const data: Record<Currency, { symbol: string; amount: string; profit: string; profitRaw: string }> = {
-    INR: { symbol: "₹", amount: "4,250.00",  profit: "+₹142.50",   profitRaw: "+3.5%" },
-    YTP: { symbol: "",  amount: "5,892 YTP", profit: "+197.4 YTP", profitRaw: "+3.5%" },
-};
-
 const NetWorthSection = () => {
-    const [visible,  setVisible]  = useState(false);           // hidden by default
-    const [currency, setCurrency] = useState<Currency>("INR"); // INR by default
+    const [visible,  setVisible]  = useState(false);
+    const [currency, setCurrency] = useState<Currency>("INR");
+
+    const { ytpBalance, inrBalance, ytpToInrRate } = useWallet();
+
+    // Format values from real data
+    const inrFormatted = inrBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const ytpFormatted = ytpBalance.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+
+    const data: Record<Currency, { symbol: string; amount: string; profit: string; profitRaw: string }> = {
+        INR: { symbol: "₹", amount: inrFormatted,             profit: `+₹${(inrBalance * 0.035).toFixed(2)}`, profitRaw: "+3.5%" },
+        YTP: { symbol: "",  amount: `${ytpFormatted} YTP`,    profit: `+${(ytpBalance * 0.035).toFixed(2)} YTP`, profitRaw: "+3.5%" },
+    };
 
     const { symbol, amount, profit, profitRaw } = data[currency];
 
@@ -43,10 +50,9 @@ const NetWorthSection = () => {
                 {/* ── Top row: label + currency toggle ── */}
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
-                        <p className="text-[10px] uppercase tracking-[0.22em] text-emerald-400/60 font-bold">
+                        <p className="text-[12px] uppercase tracking-[0.22em] text-emerald-400/60 font-bold">
                             Total Net Worth
                         </p>
-                        {/* Eye toggle */}
                         <button
                             onClick={() => setVisible((v) => !v)}
                             aria-label={visible ? "Hide balance" : "Show balance"}
@@ -62,7 +68,7 @@ const NetWorthSection = () => {
                             <button
                                 key={c}
                                 onClick={() => setCurrency(c)}
-                                className={`px-3 py-1 rounded-[9px] text-[10px] font-black tracking-wider transition-all duration-200 ${
+                                className={`px-3 py-1 rounded-[9px] text-[12px] font-black tracking-wider transition-all duration-200 ${
                                     currency === c
                                         ? "bg-emerald-500 text-black shadow-sm"
                                         : "text-gray-500 hover:text-gray-300"
@@ -77,7 +83,6 @@ const NetWorthSection = () => {
                 {/* ── Amount ── */}
                 <div className="flex items-end justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                        {/* Animated amount swap */}
                         <AnimatePresence mode="wait">
                             <motion.h1
                                 key={`${currency}-${visible}`}
@@ -116,7 +121,7 @@ const NetWorthSection = () => {
                     {/* Right: % badge */}
                     <div className="shrink-0 flex flex-col items-center justify-center h-16 w-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
                         <span className="text-emerald-400 text-base font-black leading-none">{profitRaw}</span>
-                        <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mt-0.5">Today</span>
+                        <span className="text-[13px] text-gray-500 font-bold uppercase tracking-wider mt-0.5">Today</span>
                     </div>
                 </div>
             </div>
