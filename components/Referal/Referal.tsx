@@ -316,6 +316,7 @@ const ReferralPage = () => {
     const [referralCode, setReferralCode]     = useState("");
     const [referralLink, setReferralLink]     = useState("");
     const [referredUsers, setReferredUsers]   = useState<any[]>([]);
+    const [referralEarned, setReferralEarned] = useState(0);
     const [pageLoading, setPageLoading]       = useState(true);
     const [showSponsor, setShowSponsor]       = useState(false);
     const [showCustom, setShowCustom]         = useState(false);
@@ -328,9 +329,10 @@ const ReferralPage = () => {
         const fetchData = async () => {
             setPageLoading(true);
             try {
-                const [refRes, listRes] = await Promise.allSettled([
+                const [refRes, listRes, refTxnRes] = await Promise.allSettled([
                     api.get(ENDPOINTS.USER_REFERRAL),
                     api.get(ENDPOINTS.REFERRED_USER_LIST),
+                    api.post(ENDPOINTS.TRANSACTION_FILTER, { trans_type_filter: ["Referral Reward"] }),
                 ]);
 
                 if (refRes.status === "fulfilled") {
@@ -354,6 +356,18 @@ const ReferralPage = () => {
                         if (data.length > 0 && data[0].referral_link) {
                             refLinkIdFromList = data[0].referral_link;
                         }
+                    }
+                }
+
+                // Referral Reward transactions → Earned
+                if (refTxnRes.status === "fulfilled") {
+                    const raw = refTxnRes.value.data?.data ?? refTxnRes.value.data?.results ?? refTxnRes.value.data;
+                    if (Array.isArray(raw)) {
+                        const earned = raw.reduce((sum: number, t: any) => {
+                            const amt = Number(t?.amount ?? 0);
+                            return Number.isFinite(amt) ? sum + amt : sum;
+                        }, 0);
+                        setReferralEarned(earned);
                     }
                 }
 
@@ -448,10 +462,10 @@ const ReferralPage = () => {
                 className="grid grid-cols-2 md:grid-cols-4 gap-3"
             >
                 {[
-                    { label: "Total Referrals", value: String(totalReferred).padStart(2, "0"), icon: Users,        color: "text-emerald-400" },
-                    { label: "KYC Done",        value: String(kycDoneCount).padStart(2, "0"),  icon: CheckCircle2, color: "text-sky-400" },
-                    { label: "Pending KYC",     value: String(pendingCount).padStart(2, "0"),  icon: Clock,        color: "text-amber-400" },
-                    { label: "Referral Code",   value: referralCode || "—",                    icon: Award,        color: "text-violet-400" },
+                    { label: "Total Referrals", value: String(totalReferred).padStart(2, "0"),                                                                  icon: Users,        color: "text-emerald-400" },
+                    { label: "KYC Done",        value: String(kycDoneCount).padStart(2, "0"),                                                                   icon: CheckCircle2, color: "text-sky-400" },
+                    { label: "Pending KYC",     value: String(pendingCount).padStart(2, "0"),                                                                   icon: Clock,        color: "text-amber-400" },
+                    { label: "Referral Earned", value: `${referralEarned.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} YTP`, icon: TrendingUp,   color: "text-violet-400" },
                 ].map((s, i) => (
                     <div key={i} className="flex items-center gap-3 rounded-2xl border border-white/6 p-3.5" style={{ background: "rgba(10,26,15,0.7)" }}>
                         <div className="h-9 w-9 rounded-xl bg-white/5 border border-white/8 flex items-center justify-center shrink-0">

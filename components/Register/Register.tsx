@@ -296,7 +296,7 @@ const Register = () => {
     const stepItems = [
         { label: "Phone Verification", sub: "WhatsApp OTP", done: phoneVerified, icon: Smartphone },
         { label: "Email Verification",  sub: "Email OTP",    done: emailVerified, icon: Mail },
-        { label: "Complete Profile",     sub: "Name & Password", done: false,     icon: User },
+        { label: "Create Password",     sub: "Password", done: false,     icon: User },
     ];
 
     return (
@@ -592,7 +592,7 @@ const Register = () => {
                         {step === "profile" && (
                             <StepWrap key="profile">
                                 <StepHead
-                                    title="Complete Profile"
+                                    title="Create Password"
                                     sub="Almost done! Set up your name and password."
                                     step="Step 3 of 3"
                                 />

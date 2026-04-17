@@ -88,4 +88,16 @@ export const ENDPOINTS = {
     SOCIAL_MEDIA_FOLLOW:    "/promotion/tasks/social-follow/",
     START_IPHONE_POOL:      "/promotion/iphone-pool/",
 
+    // ── General / Chart ──────────────────────────────────────────────────────
+    CHART_DATA:             "/core/time_range_data/",
+
+    // ── Promotion / Voucher ─────────────────────────────────────────────────
+    STAKING_CASH_VOUCHER:   "/promotion/tasks/staking-cashback-voucher/",
+    START_IPHONE_POOL_TASK: "/promotion/iphone-pool/",
+
+    // ── Support / Tickets ───────────────────────────────────────────────────
+    TICKET_CREATE:          "/support/create-ticket/",
+    TICKET_LIST:            "/support/user-tickets/",
+    TICKET_COMMENTS:        "/support/ticket/comments/",
+
 };

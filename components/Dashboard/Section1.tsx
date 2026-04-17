@@ -17,7 +17,7 @@ const features = [
     { title: "Add fund", icon: PlusCircle, color: "text-green-400", href: "/addfund" },
     { title: "Wallet", icon: Wallet, color: "text-blue-400" , href: "/wallet" },
     { title: "Transactions", icon: Repeat, color: "text-green-400", href: "/transactions" },
-    { title: "Buy Assets", icon: TrendingUp, color: "text-purple-400", href: "/buy-assets" },
+    { title: "Buy YTP", icon: TrendingUp, color: "text-purple-400", href: "/buy-assets" },
     { title: "Referrals", icon: Users, color: "text-yellow-400", href: "/referal" },
     { title: "Sell YTP", icon: CreditCard, color: "text-red-400", href: "/sell-ytp" },
     { title: "Withdraw", icon: ArrowUpRight, color: "text-orange-400", href: "/withdraw" },

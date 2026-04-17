@@ -145,7 +145,7 @@ const YatriPayPage = () => {
                                     )
                                 },
                                 {
-                                    label: 'Buy Asset',
+                                    label: 'Buy YTP',
                                     icon: (
                                         <>
                                             <path d="M3 7h18l-2 10H5L3 7z" />
@@ -174,7 +174,7 @@ const YatriPayPage = () => {
                                     <div className="bg-[#111A15] border-[1.2px] border-[#5C6E64]/30 rounded-[24px] p-5 flex flex-col justify-between hover:border-[#00C896] transition-all group">
                                         <div>
                                             <h3 className="text-lg font-black text-white">LEARNER</h3>
-                                            <p className="text-[12px] text-[#5C6E64] mb-4">Start your journey</p>
+                                            {/* <p className="text-[12px] text-[#5C6E64] mb-4">Start your journey</p> */}
 
                                             <div className="space-y-3 mb-6">
                                                 <div className="flex justify-between items-end">
@@ -281,7 +281,7 @@ const YatriPayPage = () => {
                                                     EXCLUSIVE DROP
                                                 </p>
                                                 <h3 className="text-2xl font-extrabold leading-tight mt-1">
-                                                    Staking Pass
+                                                    Earning Pass
                                                 </h3>
                                                 <p className="text-sm text-[#AAB8B0] mt-1">
                                                     Unlock <span className="text-white font-bold">10,000 YTP</span>

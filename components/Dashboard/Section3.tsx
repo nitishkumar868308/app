@@ -19,7 +19,7 @@ const stakingOffers = [
     },
     {
         label: "AI Powered",
-        title: "50% APY",
+        title: "50% Yearly",
         subtitle: "Grow your wealth with AI-staking",
         cta: "Start Staking",
         bgGradient: "from-indigo-600 to-blue-700",
@@ -28,7 +28,7 @@ const stakingOffers = [
     },
     {
         label: "High Yield",
-        title: "Up to 1000% APY",
+        title: "Up to 1000% Yearly",
         subtitle: "Activate staking hike now",
         cta: "Claim Now",
         bgGradient: "from-green-600 to-green-500",

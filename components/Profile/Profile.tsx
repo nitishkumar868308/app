@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
     User, Mail, Phone, MapPin, Calendar, Shield,
     CheckCircle2, AlertCircle, Edit3, Camera,
-    Copy, Star, Award, Users,
+    Copy, Award, Users,
     Wallet, TrendingUp, Clock, LogOut, Settings,
     ChevronRight, Lock, KeyRound, ExternalLink,
+    Coins, Lock as LockIcon,
 } from "lucide-react";
 import Link from "next/link";
 import PinModal from "@/components/Include/PinModal";
@@ -118,19 +119,28 @@ const Profile = () => {
 
     const [referralCodeFromApi, setReferralCodeFromApi] = useState("");
 
+    // Referral + staking stats
+    const [totalReferred, setTotalReferred]   = useState(0);
+    const [activeReferrals, setActiveReferrals] = useState(0);
+    const [referralEarned, setReferralEarned] = useState(0);
+    const [totalStaked, setTotalStaked]       = useState(0);
+
     // Sync hasPin
     useEffect(() => {
         if (authUser?.pin_status) setHasPin(true);
     }, [authUser?.pin_status]);
 
-    // Fetch KYC + Referral data
+    // Fetch KYC + Referral + Staking data
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [statusRes, listRes, refRes] = await Promise.allSettled([
+                const [statusRes, listRes, refRes, refListRes, portfolioRes, refTxnRes] = await Promise.allSettled([
                     api.get(ENDPOINTS.KYC_STATUS),
                     api.get(ENDPOINTS.KYC_LIST),
                     api.get(ENDPOINTS.USER_REFERRAL),
+                    api.get(ENDPOINTS.REFERRED_USER_LIST),
+                    api.get(ENDPOINTS.STAKING_PORTFOLIO),
+                    api.post(ENDPOINTS.TRANSACTION_FILTER, { trans_type_filter: ["Referral Reward"] }),
                 ]);
 
                 // KYC
@@ -159,11 +169,44 @@ const Profile = () => {
                     kycStatus: isApproved ? "Verified" : rawStatus || "—",
                 });
 
-                // Referral
+                // Referral code
                 if (refRes.status === "fulfilled") {
                     const refData = refRes.value.data?.data ?? refRes.value.data;
                     const code = refData?.code || refData?.referral_code || "";
                     if (code) setReferralCodeFromApi(code);
+                }
+
+                // Referred users list → Total / Active
+                if (refListRes.status === "fulfilled") {
+                    const raw = refListRes.value.data?.data ?? refListRes.value.data;
+                    if (Array.isArray(raw)) {
+                        setTotalReferred(raw.length);
+                        setActiveReferrals(raw.filter((u: any) => u?.reward_given).length);
+                    }
+                }
+
+                // Referral Reward transactions → Earned
+                if (refTxnRes.status === "fulfilled") {
+                    const raw = refTxnRes.value.data?.data ?? refTxnRes.value.data?.results ?? refTxnRes.value.data;
+                    if (Array.isArray(raw)) {
+                        const earned = raw.reduce((sum: number, t: any) => {
+                            const amt = Number(t?.amount ?? 0);
+                            return Number.isFinite(amt) ? sum + amt : sum;
+                        }, 0);
+                        setReferralEarned(earned);
+                    }
+                }
+
+                // Staking portfolio → Total Staked
+                if (portfolioRes.status === "fulfilled") {
+                    const raw = portfolioRes.value.data?.data ?? portfolioRes.value.data;
+                    if (Array.isArray(raw)) {
+                        const sum = raw.reduce((acc: number, item: any) => {
+                            const amt = Number(item?.lock_amount ?? item?.amount ?? 0);
+                            return Number.isFinite(amt) ? acc + amt : acc;
+                        }, 0);
+                        setTotalStaked(sum);
+                    }
                 }
             } catch { /* silent */ }
         };
@@ -184,7 +227,6 @@ const Profile = () => {
     const initials     = authUser ? `${authUser.first_name?.[0] || ""}${authUser.last_name?.[0] || ""}`.toUpperCase() || "U" : "U";
     const userEmail    = authUser?.email || "—";
     const userPhone    = authUser?.phone_no || "—";
-    const userId       = authUser ? `YTP-${String(authUser.id).padStart(8, "0")}` : "—";
     const referralCode = referralCodeFromApi || authUser?.referral_id || "—";
     const referredBy   = authUser?.referred_by_name || null;
 
@@ -195,26 +237,19 @@ const Profile = () => {
     // DOB from KYC
     const dob = kycData.dob || "—";
 
-    // KYC completed date
-    const kycCompletedDate = kycData.kycDate
-        ? new Date(kycData.kycDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
-        : "—";
-
     // Balance display
     const balanceDisplay = balCurrency === "YTP"
         ? `${ytpBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })} YTP`
         : `₹${inrBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-    const STATS = [
-        { label: "Total Balance",    value: balanceDisplay, icon: Wallet,     color: "text-emerald-400", toggle: true },
-        { label: "Total Staked",     value: "0 YTP",        icon: TrendingUp, color: "text-amber-400" },
-        { label: "Referral Earned",  value: "0 YTP",        icon: Users,      color: "text-violet-400" },
-        { label: "Referred By",      value: referredBy || "None", icon: Clock, color: "text-sky-400" },
-    ];
+    const fmtYtp = (n: number) =>
+        `${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })} YTP`;
 
-    const ACTIVITY = [
-        { label: "KYC Completed",  value: kycCompletedDate },
-        { label: "KYC Status",     value: kycData.kycStatus },
+    const STATS = [
+        { label: "Total Balance",    value: balanceDisplay,                 icon: Wallet,     color: "text-emerald-400", toggle: true },
+        { label: "Total Staked",     value: fmtYtp(totalStaked),            icon: TrendingUp, color: "text-amber-400" },
+        { label: "Referral Earned",  value: fmtYtp(referralEarned),         icon: Users,      color: "text-violet-400" },
+        { label: "Referred By",      value: referredBy || "None",           icon: Clock,      color: "text-sky-400" },
     ];
 
     return (
@@ -257,7 +292,7 @@ const Profile = () => {
                                 </span>
                             </div>
                         </div>
-                        <p className="text-[12px] text-gray-500 font-mono">{userId}</p>
+                        <p className="text-[12px] text-gray-500">{userEmail}</p>
                     </div>
 
                     <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/8 text-[12px] font-black text-gray-400 uppercase tracking-widest hover:border-emerald-500/30 hover:text-emerald-400 transition-all shrink-0"
@@ -353,9 +388,9 @@ const Profile = () => {
 
                         <div className="grid grid-cols-3 gap-3">
                             {[
-                                { label: "Total Referrals", value: "0",     icon: Users },
-                                { label: "Active Users",    value: "0",     icon: CheckCircle2 },
-                                { label: "Earned",          value: "0 YTP", icon: Award },
+                                { label: "Total Referrals", value: String(totalReferred).padStart(2, "0"),    icon: Users },
+                                { label: "Active Users",    value: String(activeReferrals).padStart(2, "0"),  icon: CheckCircle2 },
+                                { label: "Earned",          value: fmtYtp(referralEarned),                    icon: Award },
                             ].map((r, i) => (
                                 <div
                                     key={i}
@@ -378,23 +413,68 @@ const Profile = () => {
                     transition={{ delay: 0.15, duration: 0.4 }}
                     className="lg:col-span-2 space-y-5"
                 >
-                    {/* Recent activity */}
+                    {/* Wallet Snapshot */}
                     <div
                         className="rounded-3xl border border-white/6 p-6 space-y-4"
                         style={{ background: "rgba(10,26,15,0.7)" }}
                     >
                         <div className="flex items-center gap-2.5">
-                            <Clock size={16} className="text-emerald-400" />
-                            <h2 className="text-sm font-black text-white tracking-wide">KYC Info</h2>
+                            <Wallet size={16} className="text-emerald-400" />
+                            <h2 className="text-sm font-black text-white tracking-wide">Wallet Snapshot</h2>
                         </div>
 
-                        <div className="space-y-0">
-                            {ACTIVITY.map((a, i) => (
-                                <div key={i} className="flex items-center justify-between py-2.5 border-b border-white/4 last:border-0">
-                                    <span className="text-[13px] text-gray-500 font-medium">{a.label}</span>
-                                    <span className="text-[13px] font-bold text-white">{a.value}</span>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div
+                                className="rounded-2xl border border-emerald-500/15 p-4"
+                                style={{ background: "linear-gradient(135deg,rgba(16,185,129,0.08) 0%,rgba(16,185,129,0.02) 100%)" }}
+                            >
+                                <div className="flex items-center gap-1.5 mb-1.5">
+                                    <Coins size={11} className="text-emerald-400" />
+                                    <p className="text-[12px] text-gray-600 uppercase tracking-wider font-bold">YTP</p>
                                 </div>
-                            ))}
+                                <p className="text-sm font-black text-white tabular-nums truncate">
+                                    {ytpBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
+                                </p>
+                            </div>
+
+                            <div
+                                className="rounded-2xl border border-sky-500/15 p-4"
+                                style={{ background: "linear-gradient(135deg,rgba(56,189,248,0.07) 0%,rgba(56,189,248,0.02) 100%)" }}
+                            >
+                                <div className="flex items-center gap-1.5 mb-1.5">
+                                    <Wallet size={11} className="text-sky-400" />
+                                    <p className="text-[12px] text-gray-600 uppercase tracking-wider font-bold">INR</p>
+                                </div>
+                                <p className="text-sm font-black text-white tabular-nums truncate">
+                                    ₹{inrBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </p>
+                            </div>
+
+                            <div
+                                className="rounded-2xl border border-amber-500/15 p-4"
+                                style={{ background: "linear-gradient(135deg,rgba(251,191,36,0.07) 0%,rgba(251,191,36,0.02) 100%)" }}
+                            >
+                                <div className="flex items-center gap-1.5 mb-1.5">
+                                    <LockIcon size={11} className="text-amber-400" />
+                                    <p className="text-[12px] text-gray-600 uppercase tracking-wider font-bold">Staked</p>
+                                </div>
+                                <p className="text-sm font-black text-white tabular-nums truncate">
+                                    {totalStaked.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </p>
+                            </div>
+
+                            <div
+                                className="rounded-2xl border border-violet-500/15 p-4"
+                                style={{ background: "linear-gradient(135deg,rgba(167,139,250,0.07) 0%,rgba(167,139,250,0.02) 100%)" }}
+                            >
+                                <div className="flex items-center gap-1.5 mb-1.5">
+                                    <Award size={11} className="text-violet-400" />
+                                    <p className="text-[12px] text-gray-600 uppercase tracking-wider font-bold">Earned</p>
+                                </div>
+                                <p className="text-sm font-black text-white tabular-nums truncate">
+                                    {referralEarned.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </p>
+                            </div>
                         </div>
                     </div>
 

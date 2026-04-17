@@ -224,6 +224,7 @@ const OfferDetail = ({ slug }: { slug: string }) => {
     const [referralLink, setReferralLink] = useState("");
     const [screenshotTask, setScreenshotTask] = useState<any>(null);
     const [followTask, setFollowTask]         = useState<any>(null);
+    const [voucherCode, setVoucherCode]       = useState<string | null>(null);
 
     // Get the right endpoint for this offer
     const taskEndpoint = offerConfig?.api === "iphone" ? ENDPOINTS.IPHONE_TASK_LIST : ENDPOINTS.TASK_LIST;
@@ -235,16 +236,28 @@ const OfferDetail = ({ slug }: { slug: string }) => {
         return data.filter((t: any) => t.task_type === offerConfig.task_type);
     };
 
-    // Fetch tasks + referral code
+    // Fetch tasks + referral code + voucher (for giveaway-iphone)
     useEffect(() => {
         if (!token || !offerConfig) return;
         (async () => {
             setLoading(true);
             try {
-                const [taskRes, refRes] = await Promise.allSettled([
+                const promises: Promise<any>[] = [
                     api.get(taskEndpoint),
                     api.get(ENDPOINTS.USER_REFERRAL),
-                ]);
+                ];
+                // Fetch staking cash voucher for giveaway-iphone
+                if (offerConfig.slug === "giveaway-iphone") {
+                    promises.push(api.get(ENDPOINTS.STAKING_CASH_VOUCHER));
+                }
+
+                console.log("offerConfig" , offerConfig)
+
+                const results = await Promise.allSettled(promises);
+
+                const taskRes = results[0];
+                const refRes = results[1];
+                const voucherRes = results[2];
 
                 if (taskRes.status === "fulfilled") {
                     const data = taskRes.value.data?.data ?? taskRes.value.data;
@@ -258,6 +271,16 @@ const OfferDetail = ({ slug }: { slug: string }) => {
                     const code = rd?.code || rd?.referral_code || "";
                     setReferralCode(code);
                     setReferralLink(`https://webapp.yatripay.com/#/signup?ref=${code}`);
+                }
+
+                if (voucherRes && voucherRes.status === "fulfilled") {
+                    const vd = voucherRes.value.data?.data ?? voucherRes.value.data;
+                    const list = Array.isArray(vd?.results) ? vd.results
+                        : Array.isArray(vd) ? vd
+                        : [];
+                    const first = list[0];
+                    const code = first?.voucher_code || first?.code || vd?.voucher_code || vd?.code || "";
+                    if (code) setVoucherCode(code);
                 }
             } catch { /* silent */ }
             finally { setLoading(false); }
@@ -274,6 +297,7 @@ const OfferDetail = ({ slug }: { slug: string }) => {
     const completedCount = tasks.filter((t) => t.status === "COMPLETED" || t.status === "DONE").length;
     const totalCount = tasks.length;
     const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+    const allTasksCompleted = totalCount > 0 && completedCount === totalCount;
 
     // Claim handler
     const handleClaim = async () => {
@@ -284,6 +308,7 @@ const OfferDetail = ({ slug }: { slug: string }) => {
             const payload: any = { id: offerConfig.claim_id };
 
             const res = await api.post(ENDPOINTS.CLAIM_REWARD, payload);
+            console.log("[Claim Reward] response:", res.data);
             if (res.data?.success) {
                 toast.success(res.data.message || "Reward claimed!");
                 // Refresh tasks
@@ -492,6 +517,30 @@ const OfferDetail = ({ slug }: { slug: string }) => {
                         </motion.div>
                     )}
 
+                    {/* Staking Cash Voucher Code (giveaway-iphone only) */}
+                    {voucherCode && offerConfig.slug === "giveaway-iphone" && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 12 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.05 }}
+                            className="rounded-3xl border border-teal-500/20 p-5 space-y-3 relative overflow-hidden"
+                            style={{ background: "linear-gradient(150deg, rgba(20,184,166,0.10) 0%, rgba(10,26,15,0.9) 100%)" }}
+                        >
+                            <div className="absolute -top-10 -right-10 w-32 h-32 bg-teal-500/8 rounded-full blur-3xl pointer-events-none" />
+                            <div className="relative z-10 space-y-3">
+                                <div className="flex items-center gap-2.5">
+                                    <Gift size={16} className="text-teal-400" />
+                                    <h2 className="text-sm font-black text-white tracking-wide">Your Voucher Code</h2>
+                                </div>
+                                <div className="rounded-2xl border border-teal-500/20 p-3.5 flex items-center justify-between" style={{ background: "rgba(5,13,7,0.8)" }}>
+                                    <span className="text-base font-black text-teal-400 font-mono tracking-[0.15em]">{voucherCode}</span>
+                                    <CopyBtn value={voucherCode} />
+                                </div>
+                                <p className="text-[12px] text-gray-500">Use this code in your staking summary to apply the cashback.</p>
+                            </div>
+                        </motion.div>
+                    )}
+
                     {/* Tasks */}
                     <div className="space-y-4">
                         <div className="flex items-center gap-2.5 px-1">
@@ -513,10 +562,13 @@ const OfferDetail = ({ slug }: { slug: string }) => {
                         ) : (
                             <div className={isRewardClaimed ? "opacity-60 pointer-events-none" : ""}>
                                 {tasks.map((task, i) => {
-                                    // Lock if previous task is not completed (for iphone giveaway)
+                                    // Lock if previous task is not fully completed (for iphone giveaway)
                                     const prevCompleted = i === 0 ? true : (() => {
                                         const prev = tasks[i - 1];
-                                        return prev.status === "COMPLETED" || prev.status === "DONE" || (prev.completed_subtasks >= 1);
+                                        if (prev.status === "COMPLETED" || prev.status === "DONE") return true;
+                                        const total = prev.total_subtasks ?? (Array.isArray(prev.sub_tasks) ? prev.sub_tasks.length : 0);
+                                        const done = prev.completed_subtasks ?? (Array.isArray(prev.sub_tasks) ? prev.sub_tasks.filter((s: any) => s.status === "COMPLETED" || s.is_completed).length : 0);
+                                        return total > 0 && done >= total;
                                     })();
                                     const taskLocked = offerConfig.api === "iphone" && i > 0 && !prevCompleted;
 
@@ -621,10 +673,10 @@ const OfferDetail = ({ slug }: { slug: string }) => {
                                 <p className="text-[11px] text-gray-600 uppercase tracking-wider font-bold mb-1">Status</p>
                                 <p className={`text-sm font-black ${
                                     isRewardUsed ? "text-gray-500"
-                                    : megaReward ? "text-emerald-400"
+                                    : megaReward || allTasksCompleted ? "text-emerald-400"
                                     : "text-amber-400"
                                 }`}>
-                                    {isRewardUsed ? "Used" : megaReward ? "Active" : "In Progress"}
+                                    {isRewardUsed ? "Used" : megaReward ? "Active" : allTasksCompleted ? "Completed" : "In Progress"}
                                 </p>
                             </div>
                         </div>
@@ -645,24 +697,29 @@ const OfferDetail = ({ slug }: { slug: string }) => {
                             </div>
                         </div>
 
-                        {/* Claim button — disabled when reward already exists */}
-                        <button
-                            onClick={handleClaim}
-                            disabled={isRewardClaimed || claiming}
-                            className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2.5 transition-all duration-200 ${
-                                isRewardClaimed || claiming
-                                    ? "bg-white/4 border border-white/8 text-gray-600 cursor-not-allowed"
-                                    : "bg-emerald-500 hover:bg-emerald-400 text-black shadow-[0_8px_24px_rgba(16,185,129,0.3)] active:scale-[0.98]"
-                            }`}
-                        >
-                            {claiming ? (
-                                <><Loader2 size={15} className="animate-spin" /> Claiming...</>
-                            ) : isRewardClaimed ? (
-                                <><CheckCircle2 size={15} /> Challenge Completed</>
-                            ) : (
-                                <>Join the Challenge <ArrowRight size={15} strokeWidth={2.5} /></>
-                            )}
-                        </button>
+                        {/* Claim button — disabled when reward already exists or all tasks done */}
+                        {(() => {
+                            const disabled = isRewardClaimed || allTasksCompleted || claiming;
+                            return (
+                                <button
+                                    onClick={handleClaim}
+                                    disabled={disabled}
+                                    className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2.5 transition-all duration-200 ${
+                                        disabled
+                                            ? "bg-white/4 border border-white/8 text-gray-600 cursor-not-allowed"
+                                            : "bg-emerald-500 hover:bg-emerald-400 text-black shadow-[0_8px_24px_rgba(16,185,129,0.3)] active:scale-[0.98]"
+                                    }`}
+                                >
+                                    {claiming ? (
+                                        <><Loader2 size={15} className="animate-spin" /> Claiming...</>
+                                    ) : isRewardClaimed || allTasksCompleted ? (
+                                        <><CheckCircle2 size={15} /> Challenge Completed</>
+                                    ) : (
+                                        <>Claim Now <ArrowRight size={15} strokeWidth={2.5} /></>
+                                    )}
+                                </button>
+                            );
+                        })()}
                     </div>
                 </motion.div>
             </div>

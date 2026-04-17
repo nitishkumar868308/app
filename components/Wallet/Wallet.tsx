@@ -294,7 +294,7 @@ const Wallet = () => {
                     </div>
 
                     {/* Recent transactions */}
-                    <div
+                    {/* <div
                         className="rounded-3xl border border-white/6 p-6 space-y-4"
                         style={{ background: "rgba(10,26,15,0.7)" }}
                     >
@@ -330,7 +330,7 @@ const Wallet = () => {
                                 </div>
                             ))}
                         </div>
-                    </div>
+                    </div> */}
                 </motion.div>
 
             </div>

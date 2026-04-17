@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Users, Copy, CheckCircle2, ArrowRight,
-    Gift, Sparkles, X,
+    Gift, Sparkles, X, TrendingUp,
 } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
@@ -141,15 +141,17 @@ const ReferralSection = () => {
     const [referralLink, setReferralLink] = useState("");
     const [totalReferred, setTotalReferred] = useState(0);
     const [kycDoneCount, setKycDoneCount]   = useState(0);
+    const [referralEarned, setReferralEarned] = useState(0);
 
     useEffect(() => {
         if (!token) return;
 
         const fetchData = async () => {
             try {
-                const [refRes, listRes] = await Promise.allSettled([
+                const [refRes, listRes, refTxnRes] = await Promise.allSettled([
                     api.get(ENDPOINTS.USER_REFERRAL),
                     api.get(ENDPOINTS.REFERRED_USER_LIST),
+                    api.post(ENDPOINTS.TRANSACTION_FILTER, { trans_type_filter: ["Referral Reward"] }),
                 ]);
 
                 if (refRes.status === "fulfilled") {
@@ -164,6 +166,18 @@ const ReferralSection = () => {
                     if (Array.isArray(data)) {
                         setTotalReferred(data.length);
                         setKycDoneCount(data.filter((u: any) => u.reward_given).length);
+                    }
+                }
+
+                // Referral Reward transactions → Earned
+                if (refTxnRes.status === "fulfilled") {
+                    const raw = refTxnRes.value.data?.data ?? refTxnRes.value.data?.results ?? refTxnRes.value.data;
+                    if (Array.isArray(raw)) {
+                        const earned = raw.reduce((sum: number, t: any) => {
+                            const amt = Number(t?.amount ?? 0);
+                            return Number.isFinite(amt) ? sum + amt : sum;
+                        }, 0);
+                        setReferralEarned(earned);
                     }
                 }
             } catch { /* silent */ }
@@ -258,15 +272,16 @@ const ReferralSection = () => {
                     )}
 
                     {/* Mini stats */}
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-4 gap-2">
                         {[
-                            { label: "Referred",  value: String(totalReferred).padStart(2, "0"), color: "text-emerald-400" },
-                            { label: "KYC Done",   value: String(kycDoneCount).padStart(2, "0"), color: "text-sky-400" },
-                            { label: "Pending",    value: String(pendingCount).padStart(2, "0"),  color: "text-amber-400" },
+                            { label: "Referred", value: String(totalReferred).padStart(2, "0"),                                                                  icon: Users,        color: "text-emerald-400" },
+                            { label: "KYC Done", value: String(kycDoneCount).padStart(2, "0"),                                                                   icon: CheckCircle2, color: "text-sky-400" },
+                            { label: "Pending",  value: String(pendingCount).padStart(2, "0"),                                                                   icon: Gift,         color: "text-amber-400" },
+                            { label: "Earned",   value: `${referralEarned.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`,    icon: TrendingUp,   color: "text-violet-400" },
                         ].map((s, i) => (
                             <div key={i} className="rounded-lg border border-white/5 py-2 text-center" style={{ background: "rgba(5,13,7,0.5)" }}>
                                 <p className="text-[9px] text-gray-600 uppercase tracking-wider font-bold">{s.label}</p>
-                                <p className={`text-sm font-black ${s.color}`}>{s.value}</p>
+                                <p className={`text-sm font-black ${s.color} truncate px-1`}>{s.value}</p>
                             </div>
                         ))}
                     </div>

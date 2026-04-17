@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import {
     ShieldCheck, CreditCard, PlusCircle, TrendingUp,
     ArrowLeftRight, Send, Lock, Fingerprint,
-    ChevronRight, CheckCircle2, LucideIcon,
+    ChevronRight, CheckCircle2, LucideIcon, TrendingDown
 } from "lucide-react";
 import Link from "next/link";
 import api from "@/lib/axios";
@@ -65,7 +65,7 @@ export const ALL_ACTIONS: QuickAction[] = [
     },
     {
         id: "buy",
-        label: "Buy Asset",
+        label: "Buy YTP",
         icon: TrendingUp,
         href: "/buy-assets",
         color: "text-violet-400",
@@ -76,8 +76,8 @@ export const ALL_ACTIONS: QuickAction[] = [
     },
     {
         id: "exchange",
-        label: "Exchange",
-        icon: ArrowLeftRight,
+        label: "Sell",
+        icon: TrendingDown,
         href: "/exchange",
         color: "text-amber-400",
         bg: "bg-amber-500/10",

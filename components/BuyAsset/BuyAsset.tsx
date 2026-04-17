@@ -238,7 +238,7 @@ const BuyAsset = () => {
                     </Link>
                     <div>
                         <h1 className="text-xl font-black text-white tracking-tight">Buy Asset</h1>
-                        <p className="text-sm text-gray-600 mt-0.5">Purchase crypto assets with INR</p>
+                        {/* <p className="text-sm text-gray-600 mt-0.5">Purchase crypto assets with INR</p> */}
                     </div>
                 </div>
 

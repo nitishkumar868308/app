@@ -38,9 +38,9 @@ const StakingPlans = () => {
                 <p className="text-[13px] uppercase tracking-[0.2em] text-gray-500 font-bold">
                     High Yield Staking
                 </p>
-                <span className="text-[12px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full font-bold tracking-wider">
+                {/* <span className="text-[12px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full font-bold tracking-wider">
                     LIVE · UP TO {maxApy}% APY
-                </span>
+                </span> */}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -76,11 +76,11 @@ const StakingPlans = () => {
                                 <h3 className={`text-sm font-black tracking-widest uppercase ${featured ? "text-emerald-300" : "text-white/80"}`}>
                                     {plan.name}
                                 </h3>
-                                <p className="text-[12px] text-gray-600 mt-0.5">{plan.description}</p>
+                                {/* <p className="text-[12px] text-gray-600 mt-0.5">{plan.description}</p> */}
                             </div>
 
                             <div className="mb-4">
-                                <span className="text-[12px] text-gray-600 uppercase tracking-wider">APY</span>
+                                <span className="text-[12px] text-gray-600 uppercase tracking-wider">Yearly</span>
                                 <p className={`text-3xl font-black leading-none mt-0.5 ${featured ? "text-emerald-400" : "text-emerald-500/80"}`}>
                                     {plan.per_annum}%
                                 </p>
@@ -101,7 +101,7 @@ const StakingPlans = () => {
                                             : "bg-white/5 border border-emerald-500/15 text-emerald-500/80 hover:bg-emerald-500/10 hover:text-emerald-400"
                                     }`}
                                 >
-                                    Sub: {plan.price === 0 ? "Free" : `$${plan.price}`} · Stake Now
+                                    {/* Sub: {plan.price === 0 ? "Free" : `$${plan.price}`} · Stake Now */}Start Now
                                 </button>
                             </Link>
                         </motion.div>

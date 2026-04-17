@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ShieldCheck, Zap, Globe, ArrowRight, Sparkles, LucideIcon } from "lucide-react";
+import { ShieldCheck, Zap, Globe, ArrowRight, Sparkles, LucideIcon, Award, Users, Lock, Database } from "lucide-react";
 import Link from "next/link";
 import { useStaking, type StakingPlan } from "@/context/StakingContext";
 import { SectionLoader } from "@/components/Include/Loader";
@@ -140,7 +140,14 @@ const PlanCard = ({ plan, index, isBest }: { plan: StakingPlan; index: number; i
 // ─── Main ───────────────────────────────────────────────────────────────────
 
 const Staking = () => {
-    const { plans, loading } = useStaking();
+    const { plans, loading, totalSubscribers, totalStakedAssets } = useStaking();
+
+    const statBadges = [
+        { icon: Award,    label: "3+ Years of Trust",                                                                                     color: "text-amber-400"  },
+        { icon: Users,    label: "10k+ Users",                                                                                            color: "text-violet-400" },
+        { icon: Database, label: `${totalSubscribers.toLocaleString()} Subscribers`,                                                      color: "text-sky-400"    },
+        { icon: Lock,     label: `${totalStakedAssets.toLocaleString(undefined, { maximumFractionDigits: 0 })} YTP Locked`,               color: "text-emerald-400" },
+    ];
 
     const maxApy = plans.length > 0 ? Math.max(...plans.map((p) => p.per_annum)) : 50;
 
@@ -163,16 +170,35 @@ const Staking = () => {
                 </span>
 
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight leading-none">
-                    Smart{" "}
+                    AI Powered{" "}
                     <span className="bg-linear-to-r from-emerald-300 to-green-400 bg-clip-text text-transparent">
                         Staking
                     </span>
                 </h1>
 
-                <p className="text-gray-500 text-base md:text-lg max-w-xl mx-auto leading-relaxed">
+                {/* <p className="text-gray-500 text-base md:text-lg max-w-xl mx-auto leading-relaxed">
                     Choose your tier and start generating passive rewards.
                     Premium assets deserve premium yields.
-                </p>
+                </p> */}
+            </motion.div>
+
+            {/* Trust badges — 2x2 on mobile, 4 cols on desktop */}
+            <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1, duration: 0.35 }}
+                className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-4xl mx-auto"
+            >
+                {statBadges.map((b, i) => (
+                    <div
+                        key={i}
+                        className="flex items-center gap-2.5 rounded-2xl border border-white/6 px-4 py-3"
+                        style={{ background: "rgba(10,26,15,0.7)" }}
+                    >
+                        <b.icon size={16} className={b.color} />
+                        <span className="text-[13px] font-bold text-white tracking-tight truncate">{b.label}</span>
+                    </div>
+                ))}
             </motion.div>
 
             {/* Plan cards */}
@@ -187,7 +213,7 @@ const Staking = () => {
             )}
 
             {/* Footnote */}
-            <motion.p
+            {/* <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
@@ -195,7 +221,7 @@ const Staking = () => {
             >
                 Staking rewards are calculated and distributed daily.
                 Funds can be withdrawn after the lock period ends.
-            </motion.p>
+            </motion.p> */}
 
         </div>
     );

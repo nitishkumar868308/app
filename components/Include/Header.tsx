@@ -10,6 +10,8 @@ import {
     Gift, Coins, ShieldCheck, ArrowDownLeft, AlertCircle,
     CheckCircle2, Trash2,
 } from "lucide-react";
+import api from "@/lib/axios";
+import { ENDPOINTS } from "@/lib/endpoints";
 
 // ─── Ticker data ──────────────────────────────────────────────────────────────
 
@@ -107,6 +109,19 @@ const Header = () => {
     const [open, setOpen]                   = useState(false);
     const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
     const panelRef                          = useRef<HTMLDivElement>(null);
+    const [ytpInrPrice, setYtpInrPrice]     = useState<number | null>(null);
+
+    // Fetch YTP INR price
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await api.get(ENDPOINTS.COIN_VALUE("YTP"));
+                const data = res.data?.data ?? res.data;
+                if (data?.INR) setYtpInrPrice(parseFloat(data.INR));
+                else if (data?.USD) setYtpInrPrice(parseFloat(data.USD));
+            } catch { /* silent */ }
+        })();
+    }, []);
 
     const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -159,17 +174,25 @@ const Header = () => {
 
             {/* ── Main Header ── */}
             <div className="flex items-center justify-between px-4 md:px-6 py-3 bg-[#030a05]/95 backdrop-blur-xl border-b border-emerald-500/8">
-                {/* Logo */}
-                <Link href="/dashboard" className="flex items-center group">
-                    <Image
-                        src="/logo.png"
-                        alt="YatriPay"
-                        width={160}
-                        height={40}
-                        className="h-9 w-auto object-contain transition-opacity group-hover:opacity-90"
-                        priority
-                    />
-                </Link>
+                {/* Logo + YTP Price */}
+                <div className="flex items-center gap-3">
+                    <Link href="/dashboard" className="flex items-center group">
+                        <Image
+                            src="/logo.png"
+                            alt="YatriPay"
+                            width={160}
+                            height={40}
+                            className="h-9 w-auto object-contain transition-opacity group-hover:opacity-90"
+                            priority
+                        />
+                    </Link>
+                    {ytpInrPrice !== null && (
+                        <div className="hidden sm:flex items-center gap-1.5 bg-white/4 border border-white/8 rounded-xl px-2.5 py-1.5">
+                            <span className="text-[11px] text-gray-500 font-bold uppercase tracking-wider">YTP</span>
+                            <span className="text-[13px] font-black text-emerald-400">₹{ytpInrPrice.toFixed(4)}</span>
+                        </div>
+                    )}
+                </div>
 
                 {/* Right: Welcome + Bell + Avatar */}
                 <div className="flex items-center gap-3">
