@@ -250,7 +250,7 @@ const AddRemoveModal = ({
     onClose: () => void;
     onDone: () => void;
 }) => {
-    const { ytpBalance } = useWallet();
+    const { ytpBalance, refresh: refreshWallet } = useWallet();
     const [mode, setMode]       = useState<"add" | "remove">("add");
     const [amount, setAmount]   = useState("");
     const [loading, setLoading] = useState(false);
@@ -270,6 +270,7 @@ const AddRemoveModal = ({
                 toast.error(res.data.message || "Failed");
             } else {
                 toast.success(res.data?.message || `Amount ${mode === "add" ? "added" : "removed"}!`);
+                refreshWallet();
                 onDone();
                 onClose();
             }
@@ -377,6 +378,7 @@ const UnlockModal = ({
     onClose: () => void;
     onDone: () => void;
 }) => {
+    const { refresh: refreshWallet } = useWallet();
     const [loading, setLoading] = useState(false);
     const amt = item.lock_amount ?? 0;
 
@@ -388,6 +390,7 @@ const UnlockModal = ({
                 toast.error(res.data.message || "Failed");
             } else {
                 toast.success(res.data?.message || "Staking unlocked!");
+                refreshWallet();
                 onDone();
                 onClose();
             }
@@ -485,8 +488,8 @@ const ManagePaymentModal = ({
         if (!screenshot) { toast.error("Upload screenshot"); return; }
 
         const trimmedTx = txId.trim();
-        if (!/^\d+$/.test(trimmedTx)) {
-            toast.error("Transaction ID must be numeric");
+        if (!/^[a-zA-Z0-9]+$/.test(trimmedTx)) {
+            toast.error("Transaction ID must be alphanumeric");
             return;
         }
 
@@ -981,8 +984,17 @@ const PortfolioTab = () => {
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 const StakingSummary = () => {
-    const { ytpBalance } = useWallet();
-    const { plans, loading, totalSubscribers, totalStakedAssets } = useStaking();
+    const { ytpBalance, refresh: refreshWallet } = useWallet();
+    const { plans, loading, totalSubscribers, totalStakedAssets, refresh: refreshStaking } = useStaking();
+
+    // Auto-refresh wallet balance + staking data every 15s while on this page
+    useEffect(() => {
+        const interval = setInterval(() => {
+            refreshWallet();
+            refreshStaking();
+        }, 15000);
+        return () => clearInterval(interval);
+    }, [refreshWallet, refreshStaking]);
 
     const searchParams = useSearchParams();
     const planFromUrl  = searchParams.get("plan");
@@ -1313,12 +1325,17 @@ const StakingSummary = () => {
                                     </div>
                                 )}
 
-                                <div className="grid grid-cols-3 gap-3">
-                                    {[
+                                {(() => {
+                                    const metrics = [
                                         { icon: Clock,      label: "Lock Period",  value: `${plan.validity} Days`,    green: false },
                                         { icon: TrendingUp, label: "Annual Yield", value: `${plan.per_annum}%`,       green: true  },
-                                        { icon: Zap,        label: "Staking Hike", value: `+${plan.staking_hike}%`,   green: true  },
-                                    ].map((m, i) => (
+                                        ...(plan.staking_hike > 0
+                                            ? [{ icon: Zap, label: "Staking Hike", value: `+${plan.staking_hike}%`, green: true }]
+                                            : []),
+                                    ];
+                                    return (
+                                <div className={`grid gap-3 ${metrics.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
+                                    {metrics.map((m, i) => (
                                         <div
                                             key={i}
                                             className="rounded-2xl border border-white/5 p-3 text-center"
@@ -1337,6 +1354,8 @@ const StakingSummary = () => {
                                         </div>
                                     ))}
                                 </div>
+                                    );
+                                })()}
                             </div>
 
                             {/* ── RIGHT: Summary ── */}
@@ -1440,6 +1459,8 @@ const StakingSummary = () => {
                                                 setPromoCode("");
                                                 setAgreed(false);
                                                 setActivePromo(null); // promo used, clear it
+                                                refreshWallet();
+                                                refreshStaking();
                                             } catch (err: any) {
                                                 toast.error(getApiError(err));
                                             } finally {

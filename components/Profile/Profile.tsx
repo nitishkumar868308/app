@@ -109,13 +109,15 @@ const Profile = () => {
 
     // KYC details for address/dob
     const [kycData, setKycData] = useState<{
+        firstName: string | null;
+        lastName: string | null;
         district: string | null;
         state: string | null;
         country: string | null;
         dob: string | null;
         kycDate: string | null;
         kycStatus: string;
-    }>({ district: null, state: null, country: null, dob: null, kycDate: null, kycStatus: "—" });
+    }>({ firstName: null, lastName: null, district: null, state: null, country: null, dob: null, kycDate: null, kycStatus: "—" });
 
     const [referralCodeFromApi, setReferralCodeFromApi] = useState("");
 
@@ -161,6 +163,8 @@ const Profile = () => {
                 const isApproved = ["APPROVED", "COMPLETED", "VERIFIED"].includes(rawStatus);
 
                 setKycData({
+                    firstName: details.first_name || details.firstName || null,
+                    lastName:  details.last_name || details.lastName || null,
                     district: details.district || null,
                     state:    details.state || null,
                     country:  details.country || null,
@@ -223,8 +227,12 @@ const Profile = () => {
     };
 
     // Derived
-    const fullName     = authUser ? `${authUser.first_name} ${authUser.last_name}`.trim() : "—";
-    const initials     = authUser ? `${authUser.first_name?.[0] || ""}${authUser.last_name?.[0] || ""}`.toUpperCase() || "U" : "U";
+    // Prefer KYC name (legal/verified) over signup name once KYC is verified
+    const isKycVerified = kycData.kycStatus === "Verified";
+    const effectiveFirstName = (isKycVerified && kycData.firstName) ? kycData.firstName : (authUser?.first_name || "");
+    const effectiveLastName  = (isKycVerified && kycData.lastName)  ? kycData.lastName  : (authUser?.last_name  || "");
+    const fullName     = authUser ? `${effectiveFirstName} ${effectiveLastName}`.trim() || "—" : "—";
+    const initials     = authUser ? `${effectiveFirstName?.[0] || ""}${effectiveLastName?.[0] || ""}`.toUpperCase() || "U" : "U";
     const userEmail    = authUser?.email || "—";
     const userPhone    = authUser?.phone_no || "—";
     const referralCode = referralCodeFromApi || authUser?.referral_id || "—";

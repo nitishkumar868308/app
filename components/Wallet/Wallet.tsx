@@ -44,6 +44,8 @@ const Wallet = () => {
     const coinTicker = wallet?.coin?.ticker || selectedAsset;
     const balance    = wallet?.balance ?? 0;
     const balanceInr = balance * ytpToInrRate;
+    const isBep20    = coinTicker === "BNB" || coinTicker === "USDT";
+    const networkSuffix = isBep20 ? " - BEP-20" : "";
 
     if (loading && !wallet) {
         return (
@@ -94,7 +96,7 @@ const Wallet = () => {
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2.5">
                                 <div className="h-5 w-1 rounded-full bg-emerald-400" />
-                                <h2 className="text-sm font-black text-white tracking-wide">{coinName} ({coinTicker})</h2>
+                                <h2 className="text-sm font-black text-white tracking-wide">{coinName} ({coinTicker}){networkSuffix}</h2>
                             </div>
 
                             {/* Asset dropdown */}
@@ -251,7 +253,7 @@ const Wallet = () => {
                     >
                         <div className="flex items-center gap-2.5 self-start">
                             <WalletIcon size={16} className="text-emerald-400" />
-                            <h2 className="text-sm font-black text-white tracking-wide">Receive {coinTicker}</h2>
+                            <h2 className="text-sm font-black text-white tracking-wide">Receive {coinTicker}{networkSuffix}</h2>
                         </div>
 
                         {/* QR from API */}
@@ -288,7 +290,7 @@ const Wallet = () => {
                         <div className="flex items-center gap-2 rounded-xl border border-white/5 p-2.5 w-full" style={{ background: "rgba(5,13,7,0.6)" }}>
                             <Shield size={13} className="text-emerald-500/60 shrink-0" />
                             <span className="text-[13px] text-gray-600 font-bold">
-                                Only send {coinTicker} tokens to this address
+                                Only send {coinTicker} coins to this address
                             </span>
                         </div>
                     </div>

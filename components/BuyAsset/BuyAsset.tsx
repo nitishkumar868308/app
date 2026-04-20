@@ -16,27 +16,23 @@ import { SectionLoader } from "@/components/Include/Loader";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-interface CryptoAsset {
-    id: number;
-    name: string;
-    ticker: string;
-    symbol?: string;
-    image?: string;
-    price_usd?: number;
-    [key: string]: any;
-}
+type PayCurrency = "BNB" | "USDT" | "INR";
 
-interface FiatCurrency {
-    id: number;
-    name: string;
-    symbol: string;
-    price_usd?: number;
-    [key: string]: any;
-}
-
-const QUICK_INR = [500, 1000, 2500, 5000];
 const TDS_PERCENT = 1;
 const MAX_DIGITS  = 12;
+
+// Order: other currencies on top (BNB, USDT), YTP-related INR on bottom
+const CURRENCIES: { key: PayCurrency; label: string; symbol: string }[] = [
+    { key: "BNB",  label: "Binance Coin", symbol: "BNB" },
+    { key: "USDT", label: "Tether",       symbol: "USDT" },
+    { key: "INR",  label: "Indian Rupee", symbol: "INR" },
+];
+
+const QUICK_AMOUNTS: Record<PayCurrency, number[]> = {
+    INR:  [500, 1000, 2500, 5000],
+    BNB:  [0.25, 0.50, 0.75, 1],
+    USDT: [10, 25, 50, 100],
+};
 
 // Strip digits only (no dots/minus) and check count
 const countDigits = (val: string) => val.replace(/[^0-9]/g, "").length;
@@ -47,168 +43,156 @@ const BuyAsset = () => {
     const { token } = useAuth();
 
     // Data from API
-    const [assets, setAssets]               = useState<CryptoAsset[]>([]);
-    const [currencies, setCurrencies]       = useState<FiatCurrency[]>([]);
-    const [inrBalance, setInrBalance]       = useState(0);
-    const [ytpToInrRate, setYtpToInrRate]   = useState(0);
-    const [pageLoading, setPageLoading]     = useState(true);
+    const [inrBalance, setInrBalance]   = useState(0);
+    const [bnbBalance, setBnbBalance]   = useState(0);
+    const [usdtBalance, setUsdtBalance] = useState(0);
+    const [inrRate, setInrRate]         = useState(0);    // 1 YTP = X INR
+    const [bnbRate, setBnbRate]         = useState(0);    // 1 YTP = X BNB
+    const [usdtRate, setUsdtRate]       = useState(0);    // 1 YTP = X USDT
+    const [pageLoading, setPageLoading] = useState(true);
 
-    // Form state — separate values for each field
-    const [selectedTicker, setSelectedTicker] = useState("YTP");
-    const [inrInput, setInrInput]             = useState("");   // what user typed in INR field
-    const [tokenInput, setTokenInput]         = useState("");   // what user typed in token field
-    const [activeField, setActiveField]       = useState<"inr" | "token">("inr");
-    const [buying, setBuying]                 = useState(false);
+    // Form state
+    const [selectedCurrency, setSelectedCurrency] = useState<PayCurrency>("INR");
+    const [payInput, setPayInput]                 = useState("");   // amount in selected currency
+    const [ytpInput, setYtpInput]                 = useState("");   // amount in YTP
+    const [, setActiveField]                      = useState<"pay" | "ytp">("pay");
+    const [buying, setBuying]                     = useState(false);
 
-    // ── Fetch assets, currency, balance on mount ─────────────────────────────
+    // ── Fetch balances/rates on mount ────────────────────────────────────────
+
+    const fetchBalances = useCallback(async () => {
+        try {
+            const balRes = await api.get(ENDPOINTS.BALANCE_CONVERSION);
+            const data = balRes.data;
+            if (data) {
+                setInrBalance(data.inr_balance ?? 0);
+                setBnbBalance(data.bnb_balance ?? 0);
+                setUsdtBalance(data.usdt_balance ?? 0);
+                setInrRate(parseFloat(data.inr) || 0);
+                setBnbRate(parseFloat(data.bnb) || 0);
+                setUsdtRate(parseFloat(data.usdt) || 0);
+            }
+        } catch {
+            toast.error("Failed to load balance");
+        }
+    }, []);
 
     useEffect(() => {
         if (!token) return;
-
-        const fetchData = async () => {
+        (async () => {
             setPageLoading(true);
-            try {
-                const [assetsRes, currencyRes, balanceRes] = await Promise.all([
-                    api.get(ENDPOINTS.CRYPTO_ASSET_LIST),
-                    api.get(ENDPOINTS.FIAT_CURRENCY_LIST),
-                    api.get(ENDPOINTS.BALANCE_CONVERSION),
-                ]);
+            await fetchBalances();
+            setPageLoading(false);
+        })();
+    }, [token, fetchBalances]);
 
-                const assetData = assetsRes.data?.data ?? assetsRes.data;
-                if (Array.isArray(assetData)) {
-                    const sorted = [...assetData].sort((a, b) => {
-                        if ((a.ticker || a.symbol) === "YTP") return -1;
-                        if ((b.ticker || b.symbol) === "YTP") return 1;
-                        return 0;
-                    });
-                    setAssets(sorted);
-                }
+    // ── Current tab helpers ──────────────────────────────────────────────────
 
-                const currData = currencyRes.data?.data ?? currencyRes.data;
-                if (Array.isArray(currData)) setCurrencies(currData);
+    const currentBalance =
+        selectedCurrency === "INR"  ? inrBalance  :
+        selectedCurrency === "BNB"  ? bnbBalance  : usdtBalance;
 
-                const balData = balanceRes.data;
-                if (balData) {
-                    setInrBalance(balData.inr_balance ?? 0);
-                    setYtpToInrRate(parseFloat(balData.inr) || 0);
-                }
-            } catch {
-                toast.error("Failed to load data");
-            } finally {
-                setPageLoading(false);
-            }
-        };
+    const currentRate =
+        selectedCurrency === "INR"  ? inrRate  :
+        selectedCurrency === "BNB"  ? bnbRate  : usdtRate;
 
-        fetchData();
-    }, [token]);
+    const tdsApplies = selectedCurrency === "INR";
+    const tdsFactor  = tdsApplies ? (1 + TDS_PERCENT / 100) : 1;
 
-    // ── Selected asset & rate ────────────────────────────────────────────────
+    const currencyPrefix =
+        selectedCurrency === "INR" ? "₹" :
+        selectedCurrency === "BNB" ? "BNB " : "USDT ";
 
-    const selectedAsset = assets.find((a) => (a.ticker || a.symbol) === selectedTicker) || assets[0];
-    const assetSymbol   = selectedAsset ? (selectedAsset.ticker || selectedAsset.symbol || "YTP") : "YTP";
-    const assetName     = selectedAsset?.name || "YatriPay";
-    const rate          = ytpToInrRate || 0;
+    const balanceDisplay = selectedCurrency === "INR"
+        ? `₹${currentBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+        : `${currentBalance.toLocaleString(undefined, { maximumFractionDigits: 8 })} ${selectedCurrency}`;
 
-    // ── Two-way sync: INR ↔ Token ────────────────────────────────────────────
+    // ── Two-way sync: Pay ↔ YTP ──────────────────────────────────────────────
 
-    const handleInrChange = (val: string) => {
-        // Only limit digits on what user types
+    const handlePayChange = (val: string) => {
         if (val && countDigits(val) > MAX_DIGITS) return;
-        setActiveField("inr");
-        setInrInput(val);
+        setActiveField("pay");
+        setPayInput(val);
 
-        const numInr = parseFloat(val) || 0;
-        if (numInr > 0 && rate > 0) {
-            // Match backend: coinAmount = INR / (rate * 1.01)
-            const tokens = numInr / (rate * (1 + TDS_PERCENT / 100));
-            setTokenInput(tokens.toFixed(8));
+        const numPay = parseFloat(val) || 0;
+        if (numPay > 0 && currentRate > 0) {
+            const tokens = numPay / (currentRate * tdsFactor);
+            setYtpInput(tokens.toFixed(8));
         } else {
-            setTokenInput("");
+            setYtpInput("");
         }
     };
 
-    const handleTokenChange = (val: string) => {
-        // Only limit digits on what user types
+    const handleYtpChange = (val: string) => {
         if (val && countDigits(val) > MAX_DIGITS) return;
-        setActiveField("token");
-        setTokenInput(val);
+        setActiveField("ytp");
+        setYtpInput(val);
 
         const numToken = parseFloat(val) || 0;
-        if (numToken > 0 && rate > 0) {
-            // Reverse: base = tokens * rate, total = base + tds
-            const base = numToken * rate;
-            const tds = base * (TDS_PERCENT / 100);
-            const totalInr = base + tds;
-            setInrInput(totalInr.toFixed(2));
+        if (numToken > 0 && currentRate > 0) {
+            const base  = numToken * currentRate;
+            const total = base * tdsFactor;
+            setPayInput(total.toFixed(selectedCurrency === "INR" ? 2 : 8));
         } else {
-            setInrInput("");
+            setPayInput("");
         }
     };
 
-    // Quick amount sets INR and computes token
     const setQuickAmount = (val: number) => {
-        handleInrChange(val.toString());
+        handlePayChange(val.toString());
     };
 
-    // Reset on asset change
-    const handleAssetChange = (ticker: string) => {
-        setSelectedTicker(ticker);
-        setInrInput("");
-        setTokenInput("");
+    const handleCurrencyChange = (key: PayCurrency) => {
+        setSelectedCurrency(key);
+        setPayInput("");
+        setYtpInput("");
     };
 
     // ── Derived calculations ─────────────────────────────────────────────────
 
-    const numInr = parseFloat(inrInput) || 0;
+    const numPay = parseFloat(payInput) || 0;
 
     const { tokenAmount, priceWithoutTds, tds, totalPayable } = useMemo(() => {
-        if (numInr <= 0 || rate <= 0) {
+        if (numPay <= 0 || currentRate <= 0) {
             return { tokenAmount: 0, priceWithoutTds: 0, tds: 0, totalPayable: 0 };
         }
-        // Match old code: coinAmount = INR / (rate * 1.01)
-        const tokens   = numInr / (rate * (1 + TDS_PERCENT / 100));
-        const base     = tokens * rate;        // price without TDS
-        const tdsVal   = base * (TDS_PERCENT / 100);
+        const tokens = numPay / (currentRate * tdsFactor);
+        const base   = tokens * currentRate;
+        const tdsVal = tdsApplies ? base * (TDS_PERCENT / 100) : 0;
         return {
             tokenAmount:     tokens,
             priceWithoutTds: base,
             tds:             tdsVal,
-            totalPayable:    numInr,
+            totalPayable:    numPay,
         };
-    }, [numInr, rate]);
+    }, [numPay, currentRate, tdsFactor, tdsApplies]);
 
     // ── Buy handler ──────────────────────────────────────────────────────────
 
     const handleBuy = useCallback(async () => {
-        if (numInr <= 0 || tokenAmount <= 0) return;
+        if (numPay <= 0 || tokenAmount <= 0) return;
 
         setBuying(true);
         try {
             const res = await api.post(ENDPOINTS.BUY_ASSETS, {
                 ytp_amount: parseInt(tokenAmount.toString()),
-                fiat_currency: "INR",
+                fiat_currency: selectedCurrency,
             });
 
             const data = res.data?.data ?? res.data;
             const boughtAmount = data?.Ytp_amount || tokenAmount;
 
-            toast.success(`${Number(boughtAmount).toLocaleString()} ${assetSymbol} bought successfully!`);
+            toast.success(`${Number(boughtAmount).toLocaleString()} YTP bought successfully!`);
 
-            setInrInput("");
-            setTokenInput("");
-            try {
-                const balRes = await api.get(ENDPOINTS.BALANCE_CONVERSION);
-                if (balRes.data) {
-                    setInrBalance(balRes.data.inr_balance ?? 0);
-                    setYtpToInrRate(parseFloat(balRes.data.inr) || 0);
-                }
-            } catch { /* silent */ }
+            setPayInput("");
+            setYtpInput("");
+            await fetchBalances();
         } catch (err: any) {
             toast.error(getApiError(err));
         } finally {
             setBuying(false);
         }
-    }, [numInr, tokenAmount, assetSymbol]);
+    }, [numPay, tokenAmount, selectedCurrency, fetchBalances]);
 
     // ── Loading ──────────────────────────────────────────────────────────────
 
@@ -219,6 +203,11 @@ const BuyAsset = () => {
             </div>
         );
     }
+
+    const formatRate = (r: number) =>
+        selectedCurrency === "INR"
+            ? `₹${r.toFixed(2)}`
+            : `${r.toFixed(8)} ${selectedCurrency}`;
 
     return (
         <div className="w-full max-w-7xl mx-auto px-4 md:px-6 py-8 space-y-6">
@@ -238,7 +227,6 @@ const BuyAsset = () => {
                     </Link>
                     <div>
                         <h1 className="text-xl font-black text-white tracking-tight">Buy Asset</h1>
-                        {/* <p className="text-sm text-gray-600 mt-0.5">Purchase crypto assets with INR</p> */}
                     </div>
                 </div>
 
@@ -250,8 +238,8 @@ const BuyAsset = () => {
                         <Wallet size={15} className="text-emerald-400" />
                     </div>
                     <div>
-                        <p className="text-[12px] text-gray-600 uppercase tracking-wider font-bold">INR Balance</p>
-                        <p className="text-sm font-black text-white">₹{inrBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                        <p className="text-[12px] text-gray-600 uppercase tracking-wider font-bold">{selectedCurrency} Balance</p>
+                        <p className="text-sm font-black text-white">{balanceDisplay}</p>
                     </div>
                 </div>
             </motion.div>
@@ -259,7 +247,7 @@ const BuyAsset = () => {
             {/* ── Main grid ── */}
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
 
-                {/* ── LEFT: Asset selection + inputs (3 cols) ── */}
+                {/* ── LEFT: Currency tabs + inputs (3 cols) ── */}
                 <motion.div
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -267,21 +255,20 @@ const BuyAsset = () => {
                     className="lg:col-span-3 rounded-3xl border border-white/6 p-6 space-y-6"
                     style={{ background: "rgba(10,26,15,0.7)" }}
                 >
-                    {/* Choose asset */}
+                    {/* Currency tabs */}
                     <div className="space-y-3">
                         <div className="flex items-center gap-2.5">
                             <div className="h-5 w-1 rounded-full bg-emerald-400" />
-                            <h2 className="text-base font-black text-white tracking-wide">Choose Asset</h2>
+                            <h2 className="text-base font-black text-white tracking-wide">Pay With</h2>
                         </div>
 
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                            {assets.slice(0, 8).map((a) => {
-                                const ticker = a.ticker || a.symbol || "";
-                                const active = ticker === selectedTicker;
+                        <div className="grid grid-cols-3 gap-2.5">
+                            {CURRENCIES.map((c) => {
+                                const active = c.key === selectedCurrency;
                                 return (
                                     <button
-                                        key={a.id}
-                                        onClick={() => handleAssetChange(ticker)}
+                                        key={c.key}
+                                        onClick={() => handleCurrencyChange(c.key)}
                                         className={`p-3 rounded-2xl border text-center transition-all ${
                                             active
                                                 ? "border-emerald-400/50 shadow-[0_0_16px_rgba(16,185,129,0.08)]"
@@ -294,9 +281,9 @@ const BuyAsset = () => {
                                         }}
                                     >
                                         <p className={`text-sm font-black ${active ? "text-white" : "text-gray-500"}`}>
-                                            {ticker}
+                                            {c.symbol}
                                         </p>
-                                        <p className="text-[12px] text-gray-600 mt-0.5 truncate">{a.name}</p>
+                                        <p className="text-[12px] text-gray-600 mt-0.5 truncate">{c.label}</p>
                                     </button>
                                 );
                             })}
@@ -305,20 +292,20 @@ const BuyAsset = () => {
 
                     {/* Quick amounts */}
                     <div className="flex items-center gap-2 flex-wrap">
-                        {QUICK_INR.map((val) => (
+                        {QUICK_AMOUNTS[selectedCurrency].map((val) => (
                             <motion.button
                                 key={val}
                                 whileHover={{ scale: 1.03 }}
                                 whileTap={{ scale: 0.97 }}
                                 onClick={() => setQuickAmount(val)}
                                 className={`px-4 py-2 rounded-xl border text-sm font-black transition-all ${
-                                    inrInput === val.toString()
+                                    payInput === val.toString()
                                         ? "border-emerald-400/50 bg-emerald-500/10 text-emerald-400"
                                         : "border-white/6 text-gray-500 hover:border-emerald-500/25"
                                 }`}
-                                style={inrInput !== val.toString() ? { background: "rgba(5,13,7,0.6)" } : undefined}
+                                style={payInput !== val.toString() ? { background: "rgba(5,13,7,0.6)" } : undefined}
                             >
-                                ₹{val.toLocaleString()}
+                                {currencyPrefix}{val.toLocaleString()}
                             </motion.button>
                         ))}
                     </div>
@@ -326,29 +313,36 @@ const BuyAsset = () => {
                     {/* Amount inputs */}
                     <div className="space-y-4">
 
-                        {/* INR input */}
+                        {/* Top: Pay currency (BNB / USDT / INR) */}
                         <div className="space-y-1.5">
                             <div className="flex items-center justify-between px-1">
                                 <span className="text-[13px] lg:text-sm text-gray-500 uppercase tracking-wider font-bold">
-                                    Amount INR
+                                    Amount {selectedCurrency}
                                 </span>
                                 <span className="text-[13px] text-gray-600">
-                                    {assetSymbol} = <span className="text-emerald-400 font-bold">₹{rate.toFixed(2)} INR</span>
+                                    1 YTP = <span className="text-emerald-400 font-bold">{formatRate(currentRate)}</span>
                                 </span>
                             </div>
                             <div className="relative">
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600">
-                                    <IndianRupee size={18} strokeWidth={2.5} />
+                                    {selectedCurrency === "INR" ? (
+                                        <IndianRupee size={18} strokeWidth={2.5} />
+                                    ) : (
+                                        <Coins size={18} strokeWidth={2} />
+                                    )}
                                 </span>
                                 <input
                                     type="number"
-                                    value={inrInput}
-                                    onChange={(e) => handleInrChange(e.target.value)}
-                                    onFocus={() => setActiveField("inr")}
+                                    value={payInput}
+                                    onChange={(e) => handlePayChange(e.target.value)}
+                                    onFocus={() => setActiveField("pay")}
                                     placeholder="0.00"
-                                    className="w-full rounded-2xl border border-white/8 py-4 pl-12 pr-5 text-xl font-black text-white placeholder-gray-700 focus:outline-none focus:border-emerald-500/50 transition-all"
+                                    className="w-full rounded-2xl border border-white/8 py-4 pl-12 pr-20 text-xl font-black text-white placeholder-gray-700 focus:outline-none focus:border-emerald-500/50 transition-all"
                                     style={{ background: "rgba(5,13,7,0.8)" }}
                                 />
+                                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-black text-gray-600">
+                                    {selectedCurrency}
+                                </span>
                             </div>
                         </div>
 
@@ -359,14 +353,14 @@ const BuyAsset = () => {
                             </div>
                         </div>
 
-                        {/* Token input */}
+                        {/* Bottom: YTP (always) */}
                         <div className="space-y-1.5">
                             <div className="flex items-center justify-between px-1">
                                 <span className="text-[13px] lg:text-sm text-gray-500 uppercase tracking-wider font-bold">
-                                    Amount {assetSymbol}
+                                    Amount YTP
                                 </span>
                                 <span className="text-[13px] text-gray-600">
-                                    {assetSymbol} = <span className="text-emerald-400 font-bold">₹{rate.toFixed(2)} INR</span>
+                                    1 YTP = <span className="text-emerald-400 font-bold">{formatRate(currentRate)}</span>
                                 </span>
                             </div>
                             <div className="relative">
@@ -375,22 +369,22 @@ const BuyAsset = () => {
                                 </span>
                                 <input
                                     type="number"
-                                    value={tokenInput}
-                                    onChange={(e) => handleTokenChange(e.target.value)}
-                                    onFocus={() => setActiveField("token")}
+                                    value={ytpInput}
+                                    onChange={(e) => handleYtpChange(e.target.value)}
+                                    onFocus={() => setActiveField("ytp")}
                                     placeholder="0.00"
                                     className="w-full rounded-2xl border border-white/8 py-4 pl-12 pr-16 text-xl font-black text-white placeholder-gray-700 focus:outline-none focus:border-emerald-500/50 transition-all"
                                     style={{ background: "rgba(5,13,7,0.8)" }}
                                 />
                                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-black text-gray-600">
-                                    {assetSymbol}
+                                    YTP
                                 </span>
                             </div>
                         </div>
                     </div>
 
                     {/* Breakdown below inputs */}
-                    {numInr > 0 && (
+                    {numPay > 0 && (
                         <motion.div
                             initial={{ opacity: 0, y: 6 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -400,19 +394,21 @@ const BuyAsset = () => {
                             <div className="flex items-center justify-between">
                                 <span className="text-[13px] text-gray-500">Price:</span>
                                 <span className="text-sm font-bold text-white">
-                                    {priceWithoutTds.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} INR
+                                    {priceWithoutTds.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: selectedCurrency === "INR" ? 2 : 8 })} {selectedCurrency}
                                 </span>
                             </div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-[13px] text-gray-500">TDS ({TDS_PERCENT}%):</span>
-                                <span className="text-sm font-bold text-amber-400">
-                                    {tds.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} INR
-                                </span>
-                            </div>
+                            {tdsApplies && (
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[13px] text-gray-500">TDS ({TDS_PERCENT}%):</span>
+                                    <span className="text-sm font-bold text-amber-400">
+                                        {tds.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} INR
+                                    </span>
+                                </div>
+                            )}
                             <div className="flex items-center justify-between pt-1 border-t border-white/5">
                                 <span className="text-sm text-white font-bold">Total Payable:</span>
                                 <span className="text-sm font-black text-emerald-400">
-                                    {totalPayable.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} INR
+                                    {totalPayable.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: selectedCurrency === "INR" ? 2 : 8 })} {selectedCurrency}
                                 </span>
                             </div>
                         </motion.div>
@@ -434,7 +430,7 @@ const BuyAsset = () => {
 
                     <AnimatePresence mode="wait">
                         <motion.div
-                            key={`${selectedTicker}-${numInr}`}
+                            key={`${selectedCurrency}-${numPay}`}
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
@@ -442,11 +438,14 @@ const BuyAsset = () => {
                             className="space-y-0"
                         >
                             {[
-                                { label: "Asset",        value: `${assetName} (${assetSymbol})` },
-                                { label: "Rate",         value: rate > 0 ? `1 ${assetSymbol} = ₹${rate.toFixed(2)}` : "—" },
-                                { label: "Price",        value: numInr > 0 ? `₹${priceWithoutTds.toFixed(2)}` : "—" },
-                                { label: "You Receive",  value: numInr > 0 ? `${tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 8 })} ${assetSymbol}` : "—", green: true },
-                                { label: `TDS (${TDS_PERCENT}%)`, value: numInr > 0 ? `₹${tds.toFixed(2)}` : "—" },
+                                { label: "Asset",        value: "YatriPay (YTP)" },
+                                { label: "Pay With",     value: selectedCurrency },
+                                { label: "Rate",         value: currentRate > 0 ? `1 YTP = ${formatRate(currentRate)}` : "—" },
+                                { label: "Price",        value: numPay > 0 ? `${priceWithoutTds.toFixed(selectedCurrency === "INR" ? 2 : 8)} ${selectedCurrency}` : "—" },
+                                { label: "You Receive",  value: numPay > 0 ? `${tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 8 })} YTP` : "—", green: true },
+                                ...(tdsApplies
+                                    ? [{ label: `TDS (${TDS_PERCENT}%)`, value: numPay > 0 ? `₹${tds.toFixed(2)}` : "—" }]
+                                    : []),
                                 { label: "Platform Fee", value: "Free", green: true },
                             ].map((row, i) => (
                                 <div key={i} className="flex items-center justify-between py-2.5 border-b border-white/5 last:border-0">
@@ -478,7 +477,9 @@ const BuyAsset = () => {
                                         transition={{ duration: 0.18 }}
                                         className="text-2xl font-black text-white tabular-nums"
                                     >
-                                        {numInr > 0 ? `₹${totalPayable.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}
+                                        {numPay > 0
+                                            ? `${currencyPrefix}${totalPayable.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: selectedCurrency === "INR" ? 2 : 8 })}`
+                                            : "—"}
                                     </motion.p>
                                 </AnimatePresence>
                             </div>
@@ -489,10 +490,10 @@ const BuyAsset = () => {
                     </div>
 
                     {/* Insufficient balance warning */}
-                    {numInr > 0 && totalPayable > inrBalance && (
+                    {numPay > 0 && totalPayable > currentBalance && (
                         <div className="flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/5 p-3">
                             <span className="text-[13px] text-red-400 font-bold">
-                                Insufficient INR balance. You need ₹{(totalPayable - inrBalance).toFixed(2)} more.
+                                Insufficient {selectedCurrency} balance. You need {currencyPrefix}{(totalPayable - currentBalance).toFixed(selectedCurrency === "INR" ? 2 : 8)} more.
                             </span>
                         </div>
                     )}
@@ -501,7 +502,7 @@ const BuyAsset = () => {
                     <div className="grid grid-cols-2 gap-3">
                         {[
                             { icon: Shield, label: "Secure Transaction" },
-                            { icon: Zap,    label: "Instant Delivery" },
+                            { icon: Zap,    label: "Instant Credit" },
                         ].map((t, i) => (
                             <div
                                 key={i}
@@ -518,9 +519,9 @@ const BuyAsset = () => {
                     <div className="mt-auto space-y-2">
                         <button
                             onClick={handleBuy}
-                            disabled={numInr <= 0 || buying || totalPayable > inrBalance}
+                            disabled={numPay <= 0 || buying || totalPayable > currentBalance}
                             className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2.5 transition-all duration-200 ${
-                                numInr > 0 && !buying && totalPayable <= inrBalance
+                                numPay > 0 && !buying && totalPayable <= currentBalance
                                     ? "bg-emerald-500 hover:bg-emerald-400 text-black shadow-[0_8px_24px_rgba(16,185,129,0.3)] hover:shadow-[0_8px_32px_rgba(16,185,129,0.45)] active:scale-[0.98]"
                                     : "bg-white/4 border border-white/8 text-gray-600 cursor-not-allowed"
                             }`}
@@ -532,13 +533,13 @@ const BuyAsset = () => {
                                 </>
                             ) : (
                                 <>
-                                    Buy {assetSymbol}
+                                    Buy YTP
                                     <ArrowRight size={15} strokeWidth={2.5} />
                                 </>
                             )}
                         </button>
 
-                        {numInr <= 0 && (
+                        {numPay <= 0 && (
                             <p className="text-center text-[13px] text-gray-700">
                                 Enter an amount to continue
                             </p>

@@ -405,6 +405,9 @@ const ReferralPage = () => {
     const kycDoneCount  = referredUsers.filter((u: any) => u.reward_given).length;
     const pendingCount  = totalReferred - kycDoneCount;
 
+    // Custom link is already set if the referral code contains any non-digit character
+    const isCustomLinkSet = !!referralCode && /[^0-9]/.test(referralCode);
+
     if (pageLoading) {
         return (
             <div className="w-full max-w-7xl mx-auto px-4 md:px-6 py-8">
@@ -445,13 +448,15 @@ const ReferralPage = () => {
                     <p className="text-sm text-gray-500 mt-0.5">Invite friends and earn rewards together</p>
                 </div>
 
-                <button
-                    onClick={handleAddSponsor}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-black text-[12px] uppercase tracking-widest shadow-[0_4px_16px_rgba(16,185,129,0.3)] active:scale-[0.98] transition-all shrink-0"
-                >
-                    <UserPlus size={14} strokeWidth={2.5} />
-                    {hasSponsor ? "Sponsor Added" : "Add Sponsor"}
-                </button>
+                {!hasSponsor && (
+                    <button
+                        onClick={handleAddSponsor}
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-black text-[12px] uppercase tracking-widest shadow-[0_4px_16px_rgba(16,185,129,0.3)] active:scale-[0.98] transition-all shrink-0"
+                    >
+                        <UserPlus size={14} strokeWidth={2.5} />
+                        Add Sponsor
+                    </button>
+                )}
             </motion.div>
 
             {/* ── Stats ── */}
@@ -516,7 +521,7 @@ const ReferralPage = () => {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className={`grid gap-3 ${isCustomLinkSet ? "grid-cols-1" : "grid-cols-2"}`}>
                             <button
                                 onClick={handleShare}
                                 className="flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-black font-black text-[13px] uppercase tracking-widest shadow-[0_8px_24px_rgba(16,185,129,0.3)] active:scale-[0.98] transition-all"
@@ -524,14 +529,16 @@ const ReferralPage = () => {
                                 <Share2 size={15} strokeWidth={2.5} />
                                 Invite Friends
                             </button>
-                            <button
-                                onClick={() => setShowCustom(true)}
-                                className="flex items-center justify-center gap-2 py-3.5 rounded-2xl border border-white/8 text-white font-black text-[13px] uppercase tracking-widest hover:border-emerald-500/30 hover:bg-emerald-500/5 active:scale-[0.98] transition-all"
-                                style={{ background: "rgba(5,13,7,0.6)" }}
-                            >
-                                <Link2 size={15} strokeWidth={2.5} />
-                                Custom Link
-                            </button>
+                            {!isCustomLinkSet && (
+                                <button
+                                    onClick={() => setShowCustom(true)}
+                                    className="flex items-center justify-center gap-2 py-3.5 rounded-2xl border border-white/8 text-white font-black text-[13px] uppercase tracking-widest hover:border-emerald-500/30 hover:bg-emerald-500/5 active:scale-[0.98] transition-all"
+                                    style={{ background: "rgba(5,13,7,0.6)" }}
+                                >
+                                    <Link2 size={15} strokeWidth={2.5} />
+                                    Custom Link
+                                </button>
+                            )}
                         </div>
                     </div>
 

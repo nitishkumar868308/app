@@ -212,7 +212,7 @@ const PinModal = ({ open, onClose, onSuccess, mode, title, subtitle }: PinModalP
             case "input":       return subtitle ?? config.subtitle;
             case "confirm":     return "Re-enter your 4-digit PIN to confirm";
             case "verify":      return subtitle ?? config.subtitle;
-            case "forgot-otp":  return "Enter the 6-digit OTP sent to your registered mobile/email";
+            case "forgot-otp":  return "Enter the 6-digit OTP sent to your registered email";
             case "new-pin":     return "Set your new 4-digit PIN";
             case "new-confirm": return "Re-enter to confirm your new PIN";
         }

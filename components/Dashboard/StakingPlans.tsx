@@ -90,7 +90,9 @@ const StakingPlans = () => {
                                 <Row label="Min. Stake" value={`${plan.min_stake.toLocaleString()} YTP`} />
                                 <Row label="Referral"   value={`${plan.referral_reward}% P.A.`} />
                                 <Row label="Locking"    value={`${plan.validity} Days`} />
-                                <Row label="Hike"       value={`+${plan.staking_hike}%`} />
+                                {plan.staking_hike > 0 && (
+                                    <Row label="Hike" value={`+${plan.staking_hike}%`} />
+                                )}
                             </div>
 
                             <Link href={`/stakingSummry?plan=${plan.name}`}>

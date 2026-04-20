@@ -104,7 +104,9 @@ const PlanCard = ({ plan, index, isBest }: { plan: StakingPlan; index: number; i
                 <StatRow label="Min. Stake"     value={`${plan.min_stake.toLocaleString()} YTP`} highlight={isBest} />
                 <StatRow label="Referral Bonus" value={`${plan.referral_reward}% P.A.`}           highlight={isBest} />
                 <StatRow label="Lock Period"    value={`${plan.validity} Days`}                    highlight={isBest} />
-                <StatRow label="Staking Hike"   value={`+${plan.staking_hike}%`}                   highlight={isBest} green />
+                {plan.staking_hike > 0 && (
+                    <StatRow label="Staking Hike" value={`+${plan.staking_hike}%`} highlight={isBest} green />
+                )}
             </div>
 
             {/* Cost + CTA */}

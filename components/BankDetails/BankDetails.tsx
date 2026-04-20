@@ -468,7 +468,7 @@ const BankDetails = () => {
                                         {
                                             icon: CheckCircle2,
                                             title: "Verified Process",
-                                            desc: "Bank details are verified through secure RBI-approved channels",
+                                            desc: "Bank details are verified through secure channels",
                                         },
                                     ].map((t, i) => (
                                         <div

@@ -452,10 +452,10 @@ const Register = () => {
                     {/* Trust badges — desktop */}
                     <div className="hidden lg:grid grid-cols-2 gap-2 relative z-10">
                         {[
-                            { icon: Shield,     label: "AES-256" },
-                            { icon: Zap,        label: "Instant" },
-                            { icon: Globe,      label: "2M+ Users" },
-                            { icon: TrendingUp, label: "₹500Cr+" },
+                            { icon: Shield,     label: "3+ Years of Trust" },
+                            { icon: Zap,        label: "1M+ Transaction" },
+                            { icon: Globe,      label: "10,000+ Users" },
+                            { icon: TrendingUp, label: "Dedicated Blockchain" },
                         ].map((b, i) => (
                             <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-white/3 border border-white/4">
                                 <b.icon size={11} className="text-emerald-500/60 shrink-0" />
@@ -499,6 +499,17 @@ const Register = () => {
                                     onChange={(v) => setPhone(v.replace(/\D/g, "").slice(0, 10))}
                                     prefix="+91"
                                 />
+                                <div className="mt-3 flex items-start gap-2.5 p-3 rounded-xl border border-amber-500/20 bg-amber-500/6">
+                                    <ShieldCheck size={14} className="text-amber-400 shrink-0 mt-0.5" />
+                                    <div className="min-w-0">
+                                        <p className="text-[13px] font-black text-amber-400 leading-tight">
+                                            FIU Registration in Progress
+                                        </p>
+                                        <p className="text-[12px] text-amber-400/70 font-semibold mt-0.5">
+                                            REID Received
+                                        </p>
+                                    </div>
+                                </div>
                                 <ActionBtn label="Send OTP" loading={loading} onClick={handleSendPhoneOtp} />
                             </StepWrap>
                         )}

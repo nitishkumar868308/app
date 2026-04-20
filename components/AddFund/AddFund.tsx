@@ -23,7 +23,7 @@ const MAX_AMOUNT    = 500000;
 // ─── Main component ─────────────────────────────────────────────────────────
 
 const AddFund = () => {
-    const { ytpBalance } = useWallet();
+    const { inrBalance } = useWallet();
 
     // Step: "amount" → enter amount & get QR, "proof" → enter txn ID & submit
     const [step, setStep]                   = useState<"amount" | "proof">("amount");
@@ -199,7 +199,7 @@ const AddFund = () => {
                     </div>
                     <div>
                         <p className="text-[12px] text-gray-600 uppercase tracking-wider font-bold">Available Balance</p>
-                        <p className="text-sm font-black text-white">{ytpBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })} YTP</p>
+                        <p className="text-sm font-black text-white">₹{inrBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     </div>
                 </div>
             </motion.div>
@@ -323,7 +323,7 @@ const AddFund = () => {
                             <div className="grid grid-cols-2 gap-3">
                                 {[
                                     { icon: Shield, label: "Secure Payment" },
-                                    { icon: Clock,  label: "Instant Credit" },
+                                    { icon: Clock,  label: "Credit within 24 hours" },
                                 ].map((t, i) => (
                                     <div
                                         key={i}
@@ -574,7 +574,7 @@ const AddFund = () => {
                             <div className="grid grid-cols-2 gap-3">
                                 {[
                                     { icon: Shield, label: "Secure Payment" },
-                                    { icon: Clock,  label: "Instant Credit" },
+                                    { icon: Clock,  label: "Credit within 24 hours" },
                                 ].map((t, i) => (
                                     <div
                                         key={i}

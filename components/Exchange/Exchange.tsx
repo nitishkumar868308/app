@@ -29,11 +29,11 @@ const SellTab = () => {
     const [currencyList, setCurrencyList]   = useState<any[]>([]);
     const [selectedAsset, setSelectedAsset] = useState("YTP");
     const [amount, setAmount]               = useState("");
+    const [inrAmount, setInrAmount]         = useState("");
     const [availableBalance, setAvailableBalance] = useState(0);
     const [exchangeRate, setExchangeRate]   = useState(0);
     const [loading, setLoading]             = useState(true);
     const [selling, setSelling]             = useState(false);
-    const [showDrop, setShowDrop]           = useState(false);
 
     // Fetch assets + currencies on mount
     useEffect(() => {
@@ -49,12 +49,9 @@ const SellTab = () => {
 
                 const assetData = assetsRes.data?.data ?? assetsRes.data;
                 if (Array.isArray(assetData)) {
-                    const sorted = [...assetData].sort((a, b) => {
-                        if ((a.ticker || a.symbol) === "YTP") return -1;
-                        if ((b.ticker || b.symbol) === "YTP") return 1;
-                        return 0;
-                    });
-                    setAssets(sorted);
+                    // Only YTP can be sold — remove BNB/USDT from sell tab
+                    const ytpOnly = assetData.filter((a: any) => (a.ticker || a.symbol) === "YTP");
+                    setAssets(ytpOnly.length > 0 ? ytpOnly : assetData.filter((a: any) => (a.ticker || a.symbol) !== "BNB" && (a.ticker || a.symbol) !== "USDT"));
                 }
 
                 const currData = currRes.data?.data ?? currRes.data;
@@ -106,7 +103,31 @@ const SellTab = () => {
     const handleAssetSelect = (symbol: string) => {
         setSelectedAsset(symbol);
         setAmount("");
-        setShowDrop(false);
+        setInrAmount("");
+    };
+
+    // YTP → INR: update INR net when YTP changes
+    const handleAmountChange = (val: string) => {
+        setAmount(val);
+        const n = parseFloat(val) || 0;
+        if (n > 0 && exchangeRate > 0) {
+            const net = n * exchangeRate * 0.99;
+            setInrAmount(net.toFixed(2));
+        } else {
+            setInrAmount("");
+        }
+    };
+
+    // INR → YTP: reverse calculate YTP from net INR user wants
+    const handleInrChange = (val: string) => {
+        setInrAmount(val);
+        const n = parseFloat(val) || 0;
+        if (n > 0 && exchangeRate > 0) {
+            const ytp = n / (exchangeRate * 0.99);
+            setAmount(ytp.toFixed(8));
+        } else {
+            setAmount("");
+        }
     };
 
     const handleSell = async () => {
@@ -120,6 +141,7 @@ const SellTab = () => {
             });
             toast.success("Sell successful!");
             setAmount("");
+            setInrAmount("");
 
             // Refresh balance
             try {
@@ -205,7 +227,7 @@ const SellTab = () => {
                                 {selectedAsset} Amount
                             </span>
                             <button
-                                onClick={() => setAmount(Math.floor(availableBalance).toString())}
+                                onClick={() => handleAmountChange(Math.floor(availableBalance).toString())}
                                 className="text-[13px] text-emerald-400 font-bold hover:underline"
                             >
                                 MAX
@@ -218,7 +240,7 @@ const SellTab = () => {
                             <input
                                 type="number"
                                 value={amount}
-                                onChange={(e) => setAmount(e.target.value)}
+                                onChange={(e) => handleAmountChange(e.target.value)}
                                 placeholder="0.00"
                                 className="w-full rounded-2xl border border-white/8 py-4 pl-12 pr-5 text-xl font-black text-white placeholder-gray-700 focus:outline-none focus:border-emerald-500/50 transition-all"
                                 style={{ background: "rgba(5,13,7,0.8)" }}
@@ -229,7 +251,7 @@ const SellTab = () => {
                         )}
                     </div>
 
-                    {/* You will get */}
+                    {/* You will get — editable */}
                     <div className="space-y-1.5">
                         <span className="text-[13px] lg:text-sm text-gray-500 uppercase tracking-wider font-bold px-1">
                             You Will Get (INR)
@@ -238,12 +260,14 @@ const SellTab = () => {
                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600">
                                 <IndianRupee size={18} strokeWidth={2.5} />
                             </span>
-                            <div
-                                className="w-full rounded-2xl border border-white/6 py-4 pl-12 pr-5 text-xl font-black text-white tabular-nums"
-                                style={{ background: "rgba(5,13,7,0.5)" }}
-                            >
-                                {numAmt > 0 ? `₹${netINR.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "0.00"}
-                            </div>
+                            <input
+                                type="number"
+                                value={inrAmount}
+                                onChange={(e) => handleInrChange(e.target.value)}
+                                placeholder="0.00"
+                                className="w-full rounded-2xl border border-white/8 py-4 pl-12 pr-5 text-xl font-black text-white placeholder-gray-700 focus:outline-none focus:border-emerald-500/50 transition-all tabular-nums"
+                                style={{ background: "rgba(5,13,7,0.8)" }}
+                            />
                         </div>
                     </div>
 
