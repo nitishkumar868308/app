@@ -58,7 +58,7 @@ export const OFFERS: OfferConfig[] = [
         reward: "Yearly Boost",
         icon: Zap,
         task_type: "staking-hike-activation",
-        claim_id: "4",
+        claim_id: "36",
         api: "task",
         gradient: {
             from: "rgba(159,18,57,0.25)",
