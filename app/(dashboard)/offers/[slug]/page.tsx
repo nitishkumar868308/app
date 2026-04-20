@@ -13,7 +13,7 @@ export default function OfferDetailPage({
     const { slug } = use(params);
 
     return (
-        <div className="bg-[#030a05] text-white">
+        <div className="bg-[#000000] text-white">
             <Header />
             <div className="pb-24">
                 <OfferDetail slug={slug} />

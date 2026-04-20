@@ -67,7 +67,7 @@ const Footer = () => {
             {/* Fade that blends page content into the pill */}
             <div
                 className="absolute inset-x-0 bottom-0 h-28 pointer-events-none"
-                style={{ background: "linear-gradient(to top, #030a05 40%, transparent 100%)" }}
+                style={{ background: "linear-gradient(to top, #000000 40%, transparent 100%)" }}
             />
 
             {/* Nav pill */}

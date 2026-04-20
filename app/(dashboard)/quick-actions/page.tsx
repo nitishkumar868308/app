@@ -15,7 +15,7 @@ const QuickActionsPage = () => {
 
     if (loading) {
         return (
-            <div className="bg-[#030a05] text-white">
+            <div className="bg-[#000000] text-white">
                 <Header />
                 <div className="w-full max-w-7xl mx-auto px-4 md:px-6 py-8">
                     <SectionLoader />
@@ -26,7 +26,7 @@ const QuickActionsPage = () => {
     }
 
     return (
-        <div className="bg-[#030a05] text-white">
+        <div className="bg-[#000000] text-white">
             <Header />
 
             <div className="w-full max-w-7xl mx-auto px-4 md:px-6 py-5 pb-24 space-y-8">

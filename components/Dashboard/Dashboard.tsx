@@ -28,7 +28,7 @@ export default function Dashboard() {
          * pb-24 on the scroll area gives exactly enough clearance for
          * the fixed nav pill (≈ 76px) so content never hides behind it.
          */
-        <div className="bg-[#030a05] text-white">
+        <div className="bg-[#000000] text-white">
             <Header />
 
             <div className="w-full max-w-7xl mx-auto px-4 md:px-6 py-5 pb-24">

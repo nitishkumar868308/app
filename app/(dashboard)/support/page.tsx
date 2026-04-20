@@ -4,7 +4,7 @@ import Support from "@/components/Support/Support";
 
 const page = () => {
     return (
-        <div className="bg-[#030a05] text-white">
+        <div className="bg-[#000000] text-white">
             <Header />
             <div className="pb-24">
                 <Support />

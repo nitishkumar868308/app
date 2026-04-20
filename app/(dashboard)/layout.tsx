@@ -10,7 +10,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
         <ProtectedRoute>
             <WalletProvider>
                 <StakingProvider>
-                    <div className="relative min-h-screen bg-[#030a05] overflow-x-hidden">
+                    <div className="relative min-h-screen bg-black overflow-x-hidden">
                         <Background />
                         <div className="relative z-10">
                             {children}

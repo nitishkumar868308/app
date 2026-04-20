@@ -49,7 +49,7 @@ export const OverlayLoader = ({ show, text = "Processing..." }: { show: boolean;
 // ─── Page loader (route transitions) ──────────────────────────────────────────
 
 export const PageLoader = () => (
-    <div className="fixed inset-0 z-[999] bg-[#030a05] flex flex-col items-center justify-center gap-5">
+    <div className="fixed inset-0 z-[999] bg-[#000000] flex flex-col items-center justify-center gap-5">
         <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}

@@ -155,7 +155,7 @@ const Header = () => {
     };
 
     return (
-        <header className="w-full sticky top-0 z-50 bg-[#030a05]">
+        <header className="w-full sticky top-0 z-50 bg-[#000000]">
             {/* ── Ticker Bar ── */}
             <div className="w-full bg-[#050d06] border-b border-emerald-500/10 overflow-hidden py-2">
                 <div className="flex animate-marquee whitespace-nowrap gap-0">
@@ -173,7 +173,7 @@ const Header = () => {
             </div>
 
             {/* ── Main Header ── */}
-            <div className="flex items-center justify-between px-4 md:px-6 py-3 bg-[#030a05]/95 backdrop-blur-xl border-b border-emerald-500/8">
+            <div className="flex items-center justify-between px-4 md:px-6 py-3 bg-[#000000]/95 backdrop-blur-xl border-b border-emerald-500/8">
                 {/* Logo + YTP Price */}
                 <div className="flex items-center gap-3">
                     <Link href="/dashboard" className="flex items-center group">
@@ -213,7 +213,7 @@ const Header = () => {
                         >
                             <Bell size={16} />
                             {unreadCount > 0 && (
-                                <span className="absolute -top-1 -right-1 h-4.5 w-4.5 min-w-4.5 rounded-full bg-emerald-500 border-2 border-[#030a05] flex items-center justify-center text-[12px] font-black text-black leading-none">
+                                <span className="absolute -top-1 -right-1 h-4.5 w-4.5 min-w-4.5 rounded-full bg-emerald-500 border-2 border-[#000000] flex items-center justify-center text-[12px] font-black text-black leading-none">
                                     {unreadCount > 9 ? "9+" : unreadCount}
                                 </span>
                             )}

@@ -172,7 +172,7 @@ const Login = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-[#030a05] text-white w-full flex items-center justify-center relative overflow-hidden p-3 sm:p-5">
+        <div className="min-h-screen bg-[#000000] text-white w-full flex items-center justify-center relative overflow-hidden p-3 sm:p-5">
 
             {/* Centered Overlay Loader */}
             <OverlayLoader show={loading} text={show2FA ? "Verifying 2FA..." : "Signing in..."} />
