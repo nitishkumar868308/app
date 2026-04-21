@@ -22,7 +22,7 @@ const SERVICES: Service[] = [
         id: "scan-pay",
         label: "Scan & Pay",
         sub: "Instant QR",
-        href: "/scan-pay",
+        href: "/transfer",
         icon: QrCode,
         color: "text-emerald-400",
         bg: "bg-emerald-500/10",

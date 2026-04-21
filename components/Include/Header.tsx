@@ -6,24 +6,24 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 import {
-    Bell, TrendingUp, TrendingDown, X,
+    Bell, TrendingUp, X,
     Gift, Coins, ShieldCheck, ArrowDownLeft, AlertCircle,
-    CheckCircle2, Trash2,
+    CheckCircle2, Trash2, Sparkles,
 } from "lucide-react";
 import api from "@/lib/axios";
 import { ENDPOINTS } from "@/lib/endpoints";
 
-// ─── Ticker data ──────────────────────────────────────────────────────────────
+// ─── Ticker messages ─────────────────────────────────────────────────────────
+// NOTE: Static promo ticker until an admin-panel endpoint is available.
+// Swap this list for an API-driven one once the admin panel ships.
 
-const tickers = [
-    { symbol: "ZL",  price: "₹2.4L",   change: "-1.2%",  up: false },
-    { symbol: "ETH", price: "₹2.4L",   change: "+0.8%",  up: true  },
-    { symbol: "YTP", price: "70.78",    change: "+4.2%",  up: true  },
-    { symbol: "BTC", price: "₹58.2L",  change: "-1.2%",  up: false },
-    { symbol: "ETH", price: "₹2.4L",   change: "+0.8%",  up: true  },
-    { symbol: "YTP", price: "79.78",    change: "+4.2%",  up: true  },
-    { symbol: "BTC", price: "₹58.2L",  change: "-1.2%",  up: false },
-    { symbol: "ETH", price: "₹2.4L",   change: "+0.8%",  up: true  },
+const tickerMessages = [
+    "🎁 Get $7 Welcome Bonus on signup",
+    "🚀 Complete KYC & earn instant rewards",
+    "💎 Stake YTP and earn up to 1000% P.A. with Super Booster",
+    "🎯 Refer friends to unlock Free Earning Pass worth ₹10,000",
+    "📱 Win iPhone 16 Pro — join the giveaway",
+    "⚡ Instant P2P transfers with zero platform fees",
 ];
 
 // ─── Notification types ───────────────────────────────────────────────────────
@@ -159,14 +159,10 @@ const Header = () => {
             {/* ── Ticker Bar ── */}
             <div className="w-full bg-[#050d06] border-b border-emerald-500/10 overflow-hidden py-2">
                 <div className="flex animate-marquee whitespace-nowrap gap-0">
-                    {[...tickers, ...tickers].map((t, i) => (
-                        <span key={i} className="inline-flex items-center gap-2 px-5 text-[13px] font-medium border-r border-white/5 last:border-0">
-                            <span className="text-gray-300 font-bold">{t.symbol}</span>
-                            <span className="text-gray-400">{t.price}</span>
-                            <span className={`flex items-center gap-0.5 font-bold ${t.up ? "text-emerald-400" : "text-red-400"}`}>
-                                {t.up ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
-                                {t.change}
-                            </span>
+                    {[...tickerMessages, ...tickerMessages].map((msg, i) => (
+                        <span key={i} className="inline-flex items-center gap-2 px-6 text-[13px] font-medium border-r border-white/5 last:border-0">
+                            <Sparkles size={11} className="text-emerald-400 shrink-0" />
+                            <span className="text-gray-300 font-semibold">{msg}</span>
                         </span>
                     ))}
                 </div>
@@ -187,7 +183,7 @@ const Header = () => {
                         />
                     </Link>
                     {ytpInrPrice !== null && (
-                        <div className="hidden sm:flex items-center gap-1.5 bg-white/4 border border-white/8 rounded-xl px-2.5 py-1.5">
+                        <div className="flex items-center gap-1.5 bg-white/4 border border-white/8 rounded-xl px-2.5 py-1.5">
                             <span className="text-[11px] text-gray-500 font-bold uppercase tracking-wider">YTP</span>
                             <span className="text-[13px] font-black text-emerald-400">₹{ytpInrPrice.toFixed(4)}</span>
                         </div>

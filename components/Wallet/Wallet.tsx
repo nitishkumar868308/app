@@ -178,17 +178,31 @@ const Wallet = () => {
                         {wallet && (
                             <div className="grid grid-cols-3 gap-3">
                                 {[
-                                    { label: "Locked",    value: wallet.lock_balance },
+                                    { label: "Locked",      value: wallet.lock_balance },
                                     { label: "Staking ROI", value: wallet.staking_roi },
-                                    { label: "Bonus",     value: wallet.welcome_bonus },
+                                    { label: `Bonus ${coinTicker}`, value: wallet.welcome_bonus, highlight: true },
                                 ].map((b, i) => (
                                     <div
                                         key={i}
-                                        className="rounded-xl border border-white/5 p-3 text-center"
-                                        style={{ background: "rgba(5,13,7,0.6)" }}
+                                        className={`rounded-xl border p-3 text-center ${
+                                            b.highlight
+                                                ? "border-emerald-500/25"
+                                                : "border-white/5"
+                                        }`}
+                                        style={{
+                                            background: b.highlight
+                                                ? "linear-gradient(135deg,rgba(16,185,129,0.08) 0%,rgba(5,13,7,0.6) 100%)"
+                                                : "rgba(5,13,7,0.6)",
+                                        }}
                                     >
-                                        <p className="text-[12px] text-gray-600 uppercase tracking-wider font-bold">{b.label}</p>
-                                        <p className="text-sm font-black text-white tabular-nums">{b.value.toLocaleString()} {coinTicker}</p>
+                                        <p className={`text-[12px] uppercase tracking-wider font-bold ${
+                                            b.highlight ? "text-emerald-400/70" : "text-gray-600"
+                                        }`}>{b.label}</p>
+                                        <p className={`text-sm font-black tabular-nums ${
+                                            b.highlight ? "text-emerald-400" : "text-white"
+                                        }`}>
+                                            {Number(b.value ?? 0).toLocaleString(undefined, { maximumFractionDigits: 4 })} {coinTicker}
+                                        </p>
                                     </div>
                                 ))}
                             </div>

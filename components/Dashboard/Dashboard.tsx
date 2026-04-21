@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import Header from "@/components/Include/Header";
 import Footer, { PageFooter } from "@/components/Include/Footer";
 import NetWorthSection from "./NetWorthSection";
-import LiveStats from "./LiveStats";
 import QuickActions from "./QuickActions";
 import Services from "./Services";
 import StakingPlans from "./StakingPlans";
@@ -48,34 +47,29 @@ export default function Dashboard() {
                         <NetWorthSection />
                     </div>
 
-                    {/* LiveStats ── left col row 2 ── mobile order 2 */}
-                    <div className="order-2 lg:order-0 lg:col-start-1 lg:row-start-2">
-                        <LiveStats />
-                    </div>
-
                     {/* Right col rows 1-5 ── mobile order 5 */}
-                    <div className="order-5 lg:order-0 lg:col-start-2 lg:row-start-1 lg:row-end-6 space-y-5">
+                    <div className="order-5 lg:order-0 lg:col-start-2 lg:row-start-1 lg:row-end-5 space-y-5">
                         <HotOffers />
                         <ReferralSection />
                     </div>
 
-                    {/* QuickActions ── left col row 3 ── mobile order 3 */}
-                    <div className="order-3 lg:order-0 lg:col-start-1 lg:row-start-3">
+                    {/* QuickActions ── left col row 2 ── mobile order 2 */}
+                    <div className="order-2 lg:order-0 lg:col-start-1 lg:row-start-2">
                         <QuickActions />
                     </div>
 
-                    {/* Services ── left col row 4 ── mobile order 4 */}
-                    <div className="order-4 lg:order-0 lg:col-start-1 lg:row-start-4">
+                    {/* Services ── left col row 3 ── mobile order 3 */}
+                    <div className="order-3 lg:order-0 lg:col-start-1 lg:row-start-3">
                         <Services />
                     </div>
 
-                    {/* StakingPlans ── left col row 5 ── mobile order 6 */}
-                    <div className="order-6 lg:order-0 lg:col-start-1 lg:row-start-5">
+                    {/* StakingPlans ── left col row 4 ── mobile order 6 */}
+                    <div className="order-6 lg:order-0 lg:col-start-1 lg:row-start-4">
                         <StakingPlans />
                     </div>
 
                     {/* MarketChart ── full width ── mobile order 7 */}
-                    <div className="order-7 lg:order-0 lg:col-span-2 lg:row-start-6">
+                    <div className="order-7 lg:order-0 lg:col-span-2 lg:row-start-5">
                         <MarketChart />
                     </div>
 

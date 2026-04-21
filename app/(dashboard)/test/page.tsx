@@ -178,7 +178,7 @@ const YatriPayPage = () => {
 
                                             <div className="space-y-3 mb-6">
                                                 <div className="flex justify-between items-end">
-                                                    <span className="text-[12px] text-[#5C6E64] font-bold">APY</span>
+                                                    <span className="text-[12px] text-[#5C6E64] font-bold">P.A.</span>
                                                     <span className="text-2xl font-black text-[#00C896] leading-none">30%</span>
                                                 </div>
                                                 <div className="h-[1px] bg-[#5C6E64]/20 w-full" />
@@ -204,7 +204,7 @@ const YatriPayPage = () => {
 
                                             <div className="space-y-3 mb-6">
                                                 <div className="flex justify-between items-end">
-                                                    <span className="text-[12px] text-[#5C6E64] font-bold">APY</span>
+                                                    <span className="text-[12px] text-[#5C6E64] font-bold">P.A.</span>
                                                     <span className="text-2xl font-black text-[#00C896] leading-none">40%</span>
                                                 </div>
                                                 <div className="h-[1px] bg-[#00C896]/20 w-full" />
@@ -229,7 +229,7 @@ const YatriPayPage = () => {
 
                                             <div className="space-y-3 mb-6">
                                                 <div className="flex justify-between items-end">
-                                                    <span className="text-[12px] text-[#5C6E64] font-bold">APY</span>
+                                                    <span className="text-[12px] text-[#5C6E64] font-bold">P.A.</span>
                                                     <span className="text-2xl font-black text-[#00C896] leading-none">50%</span>
                                                 </div>
                                                 <div className="h-[1px] bg-[#5C6E64]/20 w-full" />
@@ -281,7 +281,7 @@ const YatriPayPage = () => {
                                                     EXCLUSIVE DROP
                                                 </p>
                                                 <h3 className="text-2xl font-extrabold leading-tight mt-1">
-                                                    Earning Pass
+                                                    Free Earning Pass
                                                 </h3>
                                                 <p className="text-sm text-[#AAB8B0] mt-1">
                                                     Unlock <span className="text-white font-bold">10,000 YTP</span>
@@ -339,7 +339,7 @@ const YatriPayPage = () => {
                                             </p>
 
                                             <p className="text-sm font-bold leading-tight">
-                                                Up to <span className="text-white">1000% APY</span>
+                                                Up to <span className="text-white">1000% P.A.</span>
                                             </p>
 
                                             <button className="bg-white text-black text-[13px] font-bold py-2 rounded-lg transition hover:scale-105">

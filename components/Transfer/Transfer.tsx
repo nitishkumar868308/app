@@ -548,7 +548,12 @@ const Transfer = () => {
                                     {selectedAsset} Amount
                                 </span>
                                 <button
-                                    onClick={() => handleYtpChange(Math.floor(balance).toString())}
+                                    onClick={() => {
+                                        const maxVal = selectedAsset === "YTP"
+                                            ? Math.floor(balance).toString()
+                                            : balance.toString();
+                                        handleYtpChange(maxVal);
+                                    }}
                                     className="text-[13px] text-emerald-400 font-bold hover:underline"
                                 >
                                     MAX

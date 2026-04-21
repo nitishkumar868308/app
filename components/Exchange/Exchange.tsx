@@ -227,7 +227,12 @@ const SellTab = () => {
                                 {selectedAsset} Amount
                             </span>
                             <button
-                                onClick={() => handleAmountChange(Math.floor(availableBalance).toString())}
+                                onClick={() => {
+                                    const maxVal = selectedAsset === "INR"
+                                        ? availableBalance.toFixed(2)
+                                        : availableBalance.toString();
+                                    handleAmountChange(maxVal);
+                                }}
                                 className="text-[13px] text-emerald-400 font-bold hover:underline"
                             >
                                 MAX

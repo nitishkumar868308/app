@@ -474,15 +474,15 @@ const ReferralPage = () => {
 
                 <p className="text-[13px] md:text-sm text-gray-400 mt-3">
                     {tier === 2
-                        ? <>You&apos;ve maxed out the <span className="italic font-black text-white">Super Booster (1000% APY)</span>.</>
-                        : <>Invite <span className="font-black text-white">{remaining}</span> more friend{remaining === 1 ? "" : "s"} to unlock the <span className="italic font-black text-white">Super Booster ({nextAPY} APY)</span>.</>
+                        ? <>You&apos;ve maxed out the <span className="italic font-black text-white">Super Booster (1000% P.A.)</span>.</>
+                        : <>Invite <span className="font-black text-white">{remaining}</span> more friend{remaining === 1 ? "" : "s"} to unlock the <span className="italic font-black text-white">Super Booster ({nextAPY} P.A.)</span>.</>
                     }
                 </p>
 
                 <div className="max-w-2xl mx-auto mt-8 space-y-2.5">
                     <div className="flex items-center justify-between text-[11px]">
                         <span className="text-gray-500 italic">Current: <span className="text-white font-bold not-italic">{currentAPY}</span></span>
-                        <span className="text-emerald-400 font-black">Target: {nextAPY} APY</span>
+                        <span className="text-emerald-400 font-black">Target: {nextAPY} P.A.</span>
                     </div>
                     <div className="h-1.5 w-full rounded-full bg-white/5 overflow-hidden">
                         <motion.div
@@ -620,14 +620,14 @@ const ReferralPage = () => {
                 >
                     <div className="flex items-center gap-2 mb-5">
                         <Zap size={14} className="text-emerald-400" fill="currentColor" />
-                        <h2 className="text-[15px] font-black text-white tracking-tight">APY Milestones</h2>
+                        <h2 className="text-[15px] font-black text-white tracking-tight">P.A. Milestones</h2>
                     </div>
 
                     <div className="space-y-2.5">
                         {[
-                            { range: "1-5 Friends",  apy: "100% APY",  tier: 0 },
-                            { range: "6-10 Friends", apy: "500% APY",  tier: 1 },
-                            { range: "10+ Friends",  apy: "1000% APY", tier: 2 },
+                            { range: "1-5 Friends",  apy: "100% P.A.",  tier: 0 },
+                            { range: "6-10 Friends", apy: "500% P.A.",  tier: 1 },
+                            { range: "10+ Friends",  apy: "1000% P.A.", tier: 2 },
                         ].map((m) => {
                             const active = m.tier === tier;
                             return (
@@ -716,7 +716,7 @@ const ReferralPage = () => {
                                                 )}
                                             </div>
                                             <span className={`col-span-3 text-right text-[12px] font-black ${kycDone ? "text-emerald-400" : "text-gray-500"}`}>
-                                                {kycDone ? "+5% APY" : "Pending"}
+                                                {kycDone ? "+5% P.A." : "Pending"}
                                             </span>
                                         </motion.div>
                                     );
@@ -736,7 +736,7 @@ const ReferralPage = () => {
                 style={{ background: "rgba(0,0,0,0.4)" }}
             >
                 <p className="text-[10px] md:text-[11px] uppercase tracking-widest text-gray-600 font-black">
-                    *Rewards are credited after KYC verification. APY boost is valid for 30 days.
+                    *Rewards are credited after KYC verification. P.A. boost is valid for 30 days.
                 </p>
                 <button className="text-[12px] text-gray-400 hover:text-emerald-400 underline underline-offset-4 mt-2 font-black transition-colors">
                     Read full referral policy & terms

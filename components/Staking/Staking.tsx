@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ShieldCheck, Zap, Globe, ArrowRight, Sparkles, LucideIcon, Award, Users, Lock, Database } from "lucide-react";
+import { ShieldCheck, Zap, Globe, ArrowRight, Sparkles, LucideIcon, Users, Lock } from "lucide-react";
 import Link from "next/link";
 import { useStaking, type StakingPlan } from "@/context/StakingContext";
 import { SectionLoader } from "@/components/Include/Loader";
@@ -145,10 +145,8 @@ const Staking = () => {
     const { plans, loading, totalSubscribers, totalStakedAssets } = useStaking();
 
     const statBadges = [
-        { icon: Award,    label: "3+ Years of Trust",                                                                                     color: "text-amber-400"  },
-        { icon: Users,    label: "10k+ Users",                                                                                            color: "text-violet-400" },
-        { icon: Database, label: `${totalSubscribers.toLocaleString()} Subscribers`,                                                      color: "text-sky-400"    },
-        { icon: Lock,     label: `${totalStakedAssets.toLocaleString(undefined, { maximumFractionDigits: 0 })} YTP Locked`,               color: "text-emerald-400" },
+        { icon: Users, label: `${totalSubscribers.toLocaleString()} Subscribers`,                                             color: "text-sky-400"    },
+        { icon: Lock,  label: `${totalStakedAssets.toLocaleString(undefined, { maximumFractionDigits: 0 })} YTP Locked`,      color: "text-emerald-400" },
     ];
 
     const maxApy = plans.length > 0 ? Math.max(...plans.map((p) => p.per_annum)) : 50;
@@ -184,12 +182,12 @@ const Staking = () => {
                 </p> */}
             </motion.div>
 
-            {/* Trust badges — 2x2 on mobile, 4 cols on desktop */}
+            {/* Trust badges */}
             <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1, duration: 0.35 }}
-                className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-4xl mx-auto"
+                className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl mx-auto"
             >
                 {statBadges.map((b, i) => (
                     <div

@@ -499,17 +499,6 @@ const Register = () => {
                                     onChange={(v) => setPhone(v.replace(/\D/g, "").slice(0, 10))}
                                     prefix="+91"
                                 />
-                                <div className="mt-3 flex items-start gap-2.5 p-3 rounded-xl border border-amber-500/20 bg-amber-500/6">
-                                    <ShieldCheck size={14} className="text-amber-400 shrink-0 mt-0.5" />
-                                    <div className="min-w-0">
-                                        <p className="text-[13px] font-black text-amber-400 leading-tight">
-                                            FIU Registration in Progress
-                                        </p>
-                                        <p className="text-[12px] text-amber-400/70 font-semibold mt-0.5">
-                                            REID Received
-                                        </p>
-                                    </div>
-                                </div>
                                 <ActionBtn label="Send OTP" loading={loading} onClick={handleSendPhoneOtp} />
                             </StepWrap>
                         )}
@@ -708,6 +697,19 @@ const Register = () => {
                             Sign In
                         </Link>
                     </p>
+
+                    {/* FIU Registration Notice */}
+                    <div className="mt-5 flex items-start gap-2.5 p-3 rounded-xl border border-amber-500/20 bg-amber-500/6">
+                        <ShieldCheck size={14} className="text-amber-400 shrink-0 mt-0.5" />
+                        <div className="min-w-0">
+                            <p className="text-[13px] font-black text-amber-400 leading-tight">
+                                FIU Registration in Progress
+                            </p>
+                            <p className="text-[12px] text-amber-400/70 font-semibold mt-0.5">
+                                REID Received
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </motion.div>
         </div>

@@ -31,12 +31,12 @@ export interface OfferConfig {
 export const OFFERS: OfferConfig[] = [
     {
         slug: "staking-pass",
-        title: "Earning Pass",
+        title: "Free Earning Pass",
         tagline: "Exclusive Drop",
-        description: "Complete referral tasks to unlock your Earning Pass. Refer friends and help them complete KYC to claim the reward.",
+        description: "Complete referral tasks to unlock your Free Earning Pass. Refer friends and help them complete KYC to claim the reward.",
         badge: "LIVE",
         live: true,
-        reward: "₹10,000 Earning Pass",
+        reward: "₹10,000 Free Earning Pass",
         icon: Flame,
         task_type: "Mega Offer",
         claim_id: "5",
@@ -51,7 +51,7 @@ export const OFFERS: OfferConfig[] = [
     {
         slug: "staking-hike",
         title: "Staking Hike",
-        tagline: "Boost Rewards",
+        tagline: "Boost Your Earnings 10x",
         description: "Activate your staking hike to earn boosted Yearly on your staked assets. Complete all tasks to unlock.",
         badge: "HOT",
         live: true,
@@ -74,7 +74,7 @@ export const OFFERS: OfferConfig[] = [
         description: "Complete tasks and enter the lucky draw for a chance to win an iPhone 16 Pro.",
         badge: "NEW",
         live: true,
-        reward: "iPhone 16 Pro",
+        reward: "Stand chance to get yours",
         icon: Gift,
         task_type: "",
         claim_id: "3",

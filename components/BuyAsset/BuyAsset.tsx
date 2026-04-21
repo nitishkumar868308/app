@@ -174,10 +174,11 @@ const BuyAsset = () => {
 
         setBuying(true);
         try {
-            const res = await api.post(ENDPOINTS.BUY_ASSETS, {
-                ytp_amount: parseInt(tokenAmount.toString()),
-                fiat_currency: selectedCurrency,
-            });
+            const payload: Record<string, any> = selectedCurrency === "INR"
+                ? { ytp_amount: parseInt(tokenAmount.toString()), fiat_currency: "INR" }
+                : { ytp_amount: parseInt(tokenAmount.toString()), fiat_currency: "INR", coin_symbol: selectedCurrency };
+
+            const res = await api.post(ENDPOINTS.BUY_ASSETS, payload);
 
             const data = res.data?.data ?? res.data;
             const boughtAmount = data?.Ytp_amount || tokenAmount;

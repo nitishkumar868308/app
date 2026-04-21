@@ -39,7 +39,7 @@ const StakingPlans = () => {
                     High Yield Staking
                 </p>
                 {/* <span className="text-[12px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full font-bold tracking-wider">
-                    LIVE · UP TO {maxApy}% APY
+                    LIVE · UP TO {maxApy}% P.A.
                 </span> */}
             </div>
 

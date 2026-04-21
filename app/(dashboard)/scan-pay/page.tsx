@@ -1,26 +1,16 @@
 "use client";
 
-import { QrCode } from "lucide-react";
-import Header from "@/components/Include/Header";
-import Footer, { PageFooter } from "@/components/Include/Footer";
-import ComingSoon from "@/components/Include/ComingSoon";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 const ScanPayPage = () => {
-    return (
-        <div className="bg-[#000000] text-white">
-            <Header />
-            <div className="pb-24">
-                <ComingSoon
-                    title="Scan & Pay"
-                    subtitle="Pay instantly by scanning any QR code. We're polishing the experience for you."
-                    icon={QrCode}
-                    accent="emerald"
-                />
-                <PageFooter />
-            </div>
-            <Footer />
-        </div>
-    );
+    const router = useRouter();
+
+    useEffect(() => {
+        router.replace("/transfer");
+    }, [router]);
+
+    return null;
 };
 
 export default ScanPayPage;

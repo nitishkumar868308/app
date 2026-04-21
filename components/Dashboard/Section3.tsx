@@ -60,7 +60,7 @@ const Section3 = () => {
                     </div>
                     <div className="hidden md:block">
                         <span className="bg-green-500/10 text-green-500 text-[12px] font-bold px-3 py-1 rounded-full border border-green-500/20">
-                            LIVE APY: 50%
+                            LIVE P.A.: 50%
                         </span>
                     </div>
                 </div>
