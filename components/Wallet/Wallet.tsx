@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Wallet as WalletIcon, Copy, CheckCircle2,
@@ -9,6 +9,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useWallet } from "@/context/WalletContext";
+import { useAuth } from "@/context/AuthContext";
+import api from "@/lib/axios";
+import { ENDPOINTS } from "@/lib/endpoints";
 import { SectionLoader } from "@/components/Include/Loader";
 
 // ─── Recent transactions (hardcoded until API) ───────────────────────────────
@@ -26,9 +29,33 @@ const Wallet = () => {
         wallet, loading, ytpBalance, inrBalance, ytpToInrRate,
         address, qrCodeUrl, refresh, selectedAsset, setSelectedAsset,
     } = useWallet();
+    const { token } = useAuth();
 
     const [copied, setCopied]             = useState(false);
     const [showDropdown, setShowDropdown] = useState(false);
+    const [signupBonus, setSignupBonus]   = useState(0);
+
+    useEffect(() => {
+        if (!token) return;
+        (async () => {
+            try {
+                const res = await api.post(ENDPOINTS.TRANSACTION_FILTER, {
+                    trans_type_filter: ["Signup Bonus"],
+                    page: 1,
+                });
+                const data = res.data?.data ?? res.data;
+                if (Array.isArray(data)) {
+                    const total = data.reduce(
+                        (sum: number, t: any) => sum + (Number(t.amount) || 0),
+                        0,
+                    );
+                    setSignupBonus(total);
+                }
+            } catch {
+                // silent
+            }
+        })();
+    }, [token]);
 
     const ASSET_OPTIONS = ["YTP", "BNB", "USDT"];
 
@@ -176,11 +203,11 @@ const Wallet = () => {
 
                         {/* Extra balances */}
                         {wallet && (
-                            <div className="grid grid-cols-3 gap-3">
+                            <div className="grid grid-cols-2 gap-3">
                                 {[
                                     { label: "Locked",      value: wallet.lock_balance },
-                                    { label: "Staking ROI", value: wallet.staking_roi },
-                                    { label: `Bonus ${coinTicker}`, value: wallet.welcome_bonus, highlight: true },
+                                    // { label: "Staking ROI", value: wallet.staking_roi },
+                                    { label: `Bonus ${coinTicker}`, value: signupBonus, highlight: true },
                                 ].map((b, i) => (
                                     <div
                                         key={i}
