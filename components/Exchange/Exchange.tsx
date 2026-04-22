@@ -3,10 +3,11 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    ArrowRight, TrendingDown, Banknote, Wallet,
+    ArrowLeft, ArrowRight, TrendingDown, Banknote, Wallet,
     ChevronDown, Clock, Shield, Receipt, X,
     ArrowDownLeft, ArrowUpRight, IndianRupee, Coins, Loader2,
 } from "lucide-react";
+import Link from "next/link";
 import { useWallet } from "@/context/WalletContext";
 import toast from "react-hot-toast";
 import api from "@/lib/axios";
@@ -902,9 +903,17 @@ const Exchange = () => {
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.35 }}
+                className="flex items-center gap-4"
             >
-                <h1 className="text-xl font-black text-white tracking-tight">Exchange</h1>
-                <p className="text-[13px] text-gray-600 mt-0.5">Sell your assets or withdraw funds to your bank</p>
+                <Link href="/dashboard">
+                    <button className="h-9 w-9 rounded-xl bg-white/5 border border-white/8 flex items-center justify-center text-gray-400 hover:text-emerald-400 hover:border-emerald-500/30 transition-all">
+                        <ArrowLeft size={16} />
+                    </button>
+                </Link>
+                <div>
+                    <h1 className="text-xl font-black text-white tracking-tight">Exchange</h1>
+                    <p className="text-[13px] text-gray-600 mt-0.5">Sell your assets or withdraw funds to your bank</p>
+                </div>
             </motion.div>
 
             {/* ── Tab switcher ── */}

@@ -3,11 +3,12 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    ArrowRight, ArrowDownUp, Wallet, Send,
+    ArrowRight, ArrowLeft, ArrowDownUp, Wallet, Send,
     IndianRupee, Coins, Shield, Clock,
     Receipt, AlertCircle, CheckCircle2,
     Loader2, QrCode, Camera, ImageIcon, X,
 } from "lucide-react";
+import Link from "next/link";
 import PinModal from "@/components/Include/PinModal";
 import { useWallet } from "@/context/WalletContext";
 import { useAuth } from "@/context/AuthContext";
@@ -396,13 +397,20 @@ const Transfer = () => {
                 transition={{ duration: 0.35 }}
                 className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
             >
-                <div>
-                    <h1 className="text-xl font-black text-white tracking-tight">Transfer Fund</h1>
-                    <p className="text-sm text-gray-600 mt-0.5">
-                        Send {selectedAsset}
-                        {currentAssetMeta.bep20 ? ` on ${currentAssetMeta.network}` : ""}
-                        {" "}to any wallet address
-                    </p>
+                <div className="flex items-center gap-4">
+                    <Link href="/dashboard">
+                        <button className="h-9 w-9 rounded-xl bg-white/5 border border-white/8 flex items-center justify-center text-gray-400 hover:text-emerald-400 hover:border-emerald-500/30 transition-all shrink-0">
+                            <ArrowLeft size={16} />
+                        </button>
+                    </Link>
+                    <div>
+                        <h1 className="text-xl font-black text-white tracking-tight">Transfer Fund</h1>
+                        <p className="text-sm text-gray-600 mt-0.5">
+                            Send {selectedAsset}
+                            {currentAssetMeta.bep20 ? ` on ${currentAssetMeta.network}` : ""}
+                            {" "}to any wallet address
+                        </p>
+                    </div>
                 </div>
 
                 <div

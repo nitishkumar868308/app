@@ -3,7 +3,14 @@
     "allow": [
       "mcp__code-review-graph__semantic_search_nodes_tool",
       "Bash(xargs sed *)",
-      "mcp__code-review-graph__get_architecture_overview_tool"
+      "mcp__code-review-graph__get_architecture_overview_tool",
+      "Read(//c/Users/Pratiek A Jain/backend/wallet/**)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('core/v1/apis.py'\\).read\\(\\)\\); ast.parse\\(open\\('core/v1/urls.py'\\).read\\(\\)\\); ast.parse\\(open\\('core/v1/serializers.py'\\).read\\(\\)\\); print\\('OK'\\)\")",
+      "Bash(python -c ' *)"
+    ],
+    "additionalDirectories": [
+      "D:\\app\\components",
+      "C:\\Users\\Pratiek A Jain\\backend\\wallet\\core\\v1"
     ]
   },
   "hooks": {

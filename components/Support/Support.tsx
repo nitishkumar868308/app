@@ -5,10 +5,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
     Plus, X, Send, Paperclip, ChevronDown,
     MessageSquare, Clock, CheckCircle2, AlertCircle, XCircle,
-    LifeBuoy, Search, ChevronLeft, ChevronRight,
+    LifeBuoy, Search, ChevronLeft, ChevronRight, ArrowLeft,
     Image as ImageIcon, RefreshCw, Eye, Headphones, User as UserIcon,
 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import toast from "react-hot-toast";
 import api from "@/lib/axios";
 import { ENDPOINTS } from "@/lib/endpoints";
@@ -653,20 +654,22 @@ const Support = () => {
             />
             <TicketDetailModal ticket={activeTicket} onClose={() => setActiveTicket(null)} />
 
-            {/* ── Hero header ── */}
+            {/* ── Page header with back button ── */}
             <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.35 }}
-                className="text-center space-y-2"
+                className="flex items-center gap-4"
             >
-                <div className="flex items-center justify-center gap-2 mb-1">
-                    <Image src="/logo.png" alt="YatriPay" width={120} height={32} className="h-7 w-auto object-contain" />
+                <Link href="/dashboard">
+                    <button className="h-9 w-9 rounded-xl bg-white/5 border border-white/8 flex items-center justify-center text-gray-400 hover:text-emerald-400 hover:border-emerald-500/30 transition-all">
+                        <ArrowLeft size={16} />
+                    </button>
+                </Link>
+                <div>
+                    <h1 className="text-xl font-black text-white tracking-tight">Support Center</h1>
+                    <p className="text-sm text-gray-600 mt-0.5">Need help? Create a ticket and our team will assist you</p>
                 </div>
-                <h1 className="text-2xl font-black text-white tracking-tight">Support Center</h1>
-                <p className="text-[13px] text-gray-600 max-w-sm mx-auto">
-                    Need help? Create a ticket and our team will assist you
-                </p>
             </motion.div>
 
             {/* ── Controls bar ── */}

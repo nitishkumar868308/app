@@ -1,33 +1,31 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useCallback } from "react";
+import { motion } from "framer-motion";
 import {
     Mail, Lock, ArrowRight, ShieldCheck, Eye, EyeOff,
-    TrendingUp, Zap, Globe, X, Shield,
+    TrendingUp, Zap, Globe, Shield,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import api from "@/lib/axios";
 import { ENDPOINTS } from "@/lib/endpoints";
 import { getApiError } from "@/lib/helpers";
 import { useAuth } from "@/context/AuthContext";
 import { OverlayLoader, ButtonLoader } from "@/components/Include/Loader";
+import { save2FAEmail } from "@/components/TwoFA/TwoFA";
 
 const Login = () => {
     const { login } = useAuth();
+    const router = useRouter();
 
     const [email, setEmail]       = useState("");
     const [password, setPassword] = useState("");
     const [showPass, setShowPass] = useState(false);
     const [remember, setRemember] = useState(false);
     const [loading, setLoading]   = useState(false);
-
-    // 2FA state
-    const [show2FA, setShow2FA]   = useState(false);
-    const [twoFAOtp, setTwoFAOtp] = useState("");
-    const twoFARefs               = useRef<(HTMLInputElement | null)[]>([]);
 
     // ── Login handler ─────────────────────────────────────────────────────────
 
@@ -44,10 +42,11 @@ const Login = () => {
 
             const data = res.data?.data;
 
-            // 2FA required
+            // 2FA required — stash email for the /2fa page and redirect
             if (data?.is_2fa_enabled) {
-                setShow2FA(true);
+                save2FAEmail(email.trim());
                 toast.success("2FA required. Enter your authenticator code.");
+                router.push("/2fa-verify");
                 return;
             }
 
@@ -57,18 +56,19 @@ const Login = () => {
 
             if (token && userData) {
                 login(token, {
-                    id:               userData.id,
-                    first_name:       userData.first_name || "",
-                    last_name:        userData.last_name || "",
-                    email:            userData.email || "",
-                    phone_no:         userData.phone_no || "",
-                    avatar:           userData.avatar || null,
-                    pin_status:       userData.pin_status ?? false,
-                    role:             userData.role ?? 0,
-                    referral_id:      userData.referral_id || null,
-                    referred_by_name: userData.referred_by_name || null,
-                    is_investor:      userData.is_investor ?? false,
-                    google2fa_enable: userData.google2fa_enable ?? false,
+                    id:                userData.id,
+                    first_name:        userData.first_name || "",
+                    last_name:         userData.last_name || "",
+                    email:             userData.email || "",
+                    phone_no:          userData.phone_no || "",
+                    avatar:            userData.avatar || null,
+                    pin_status:        userData.pin_status ?? false,
+                    role:              userData.role ?? 0,
+                    referral_id:       userData.referral_id || null,
+                    referred_by_name:  userData.referred_by_name || null,
+                    is_investor:       userData.is_investor ?? false,
+                    google2fa_enable:  userData.google2fa_enable ?? false,
+                    google2fa_qr_code: userData.google2fa_qr_code || null,
                 });
                 toast.success("Welcome back!");
                 window.location.href = "/dashboard";
@@ -78,82 +78,7 @@ const Login = () => {
         } finally {
             setLoading(false);
         }
-    }, [email, password, login]);
-
-    // ── 2FA verify handler ────────────────────────────────────────────────────
-
-    const handle2FAVerify = useCallback(async () => {
-        if (twoFAOtp.length !== 6) return toast.error("Enter a valid 6-digit code.");
-
-        setLoading(true);
-        try {
-            const res = await api.post(ENDPOINTS.VERIFY_2FA, {
-                email: email.trim(),
-                otp: twoFAOtp,
-            });
-
-            const data  = res.data?.data;
-            const token = data?.token;
-            const userData = data?.user;
-
-            if (token && userData) {
-                login(token, {
-                    id:               userData.id,
-                    first_name:       userData.first_name || "",
-                    last_name:        userData.last_name || "",
-                    email:            userData.email || "",
-                    phone_no:         userData.phone_no || "",
-                    avatar:           userData.avatar || null,
-                    pin_status:       userData.pin_status ?? false,
-                    role:             userData.role ?? 0,
-                    referral_id:      userData.referral_id || null,
-                    referred_by_name: userData.referred_by_name || null,
-                    is_investor:      userData.is_investor ?? false,
-                    google2fa_enable: userData.google2fa_enable ?? false,
-                });
-                toast.success("Welcome back!");
-                window.location.href = "/dashboard";
-            }
-        } catch (err) {
-            toast.error(getApiError(err));
-        } finally {
-            setLoading(false);
-        }
-    }, [email, twoFAOtp, login]);
-
-    // ── 2FA OTP input handlers ────────────────────────────────────────────────
-
-    const handle2FAInput = (index: number, digit: string) => {
-        if (!/^\d*$/.test(digit)) return;
-        const arr = twoFAOtp.split("");
-        arr[index] = digit.slice(-1);
-        while (arr.length < 6) arr.push("");
-        const next = arr.join("").slice(0, 6);
-        setTwoFAOtp(next);
-        if (digit && index < 5) twoFARefs.current[index + 1]?.focus();
-    };
-
-    const handle2FAKeyDown = (index: number, e: React.KeyboardEvent) => {
-        if (e.key === "Backspace") {
-            e.preventDefault();
-            const arr = twoFAOtp.split("");
-            if (arr[index]) {
-                arr[index] = "";
-                setTwoFAOtp(arr.join(""));
-            } else if (index > 0) {
-                arr[index - 1] = "";
-                setTwoFAOtp(arr.join(""));
-                twoFARefs.current[index - 1]?.focus();
-            }
-        }
-    };
-
-    const handle2FAPaste = (e: React.ClipboardEvent) => {
-        e.preventDefault();
-        const text = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
-        setTwoFAOtp(text);
-        twoFARefs.current[Math.min(text.length, 5)]?.focus();
-    };
+    }, [email, password, login, router]);
 
     // ── Background data ───────────────────────────────────────────────────────
 
@@ -175,7 +100,7 @@ const Login = () => {
         <div className="min-h-screen bg-[#000000] text-white w-full flex items-center justify-center relative overflow-hidden p-3 sm:p-5">
 
             {/* Centered Overlay Loader */}
-            <OverlayLoader show={loading} text={show2FA ? "Verifying 2FA..." : "Signing in..."} />
+            <OverlayLoader show={loading} text="Signing in..." />
 
             {/* ── Background ── */}
             <div className="absolute inset-0 z-0 pointer-events-none">
@@ -407,81 +332,6 @@ const Login = () => {
                 </div>
             </motion.div>
 
-            {/* ══════════════════════════════════════════════════════════════
-                2FA Modal
-               ══════════════════════════════════════════════════════════════ */}
-            <AnimatePresence>
-                {show2FA && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center p-4"
-                        style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}
-                        onClick={() => setShow2FA(false)}
-                    >
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95, y: 16 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: 16 }}
-                            transition={{ duration: 0.25 }}
-                            className="w-full max-w-sm rounded-3xl border border-white/8 p-6 space-y-5 relative"
-                            style={{ background: "linear-gradient(170deg,#0d1f12 0%,#050d07 100%)" }}
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <button
-                                onClick={() => setShow2FA(false)}
-                                className="absolute top-4 right-4 h-7 w-7 rounded-lg bg-white/5 border border-white/8 flex items-center justify-center text-gray-500 hover:text-white transition-colors"
-                            >
-                                <X size={14} />
-                            </button>
-
-                            <div className="text-center">
-                                <div className="h-11 w-11 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-3">
-                                    <ShieldCheck size={20} className="text-emerald-400" />
-                                </div>
-                                <h3 className="text-base font-black text-white">Two-Factor Authentication</h3>
-                                <p className="text-[13px] text-gray-500 mt-1">Enter the 6-digit code from your authenticator app</p>
-                            </div>
-
-                            {/* 2FA OTP boxes */}
-                            <div className="flex gap-2" onPaste={handle2FAPaste}>
-                                {Array.from({ length: 6 }).map((_, i) => (
-                                    <input
-                                        key={i}
-                                        ref={(el) => { twoFARefs.current[i] = el; }}
-                                        type="text"
-                                        inputMode="numeric"
-                                        maxLength={1}
-                                        value={twoFAOtp[i] || ""}
-                                        onChange={(e) => handle2FAInput(i, e.target.value)}
-                                        onKeyDown={(e) => handle2FAKeyDown(i, e)}
-                                        onFocus={(e) => e.target.select()}
-                                        autoFocus={i === 0}
-                                        className={`w-0 grow h-12 min-w-0 rounded-xl border text-center text-lg font-black outline-none transition-all ${
-                                            twoFAOtp[i]
-                                                ? "border-emerald-500/50 bg-emerald-500/8 text-emerald-400"
-                                                : "border-white/10 bg-white/4 text-white focus:border-emerald-500/50"
-                                        }`}
-                                    />
-                                ))}
-                            </div>
-
-                            <button
-                                onClick={handle2FAVerify}
-                                disabled={loading || twoFAOtp.length !== 6}
-                                className={`w-full py-3.5 rounded-2xl font-black text-[13px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${
-                                    !loading && twoFAOtp.length === 6
-                                        ? "bg-emerald-500 hover:bg-emerald-400 text-black shadow-[0_8px_24px_rgba(16,185,129,0.3)] active:scale-[0.98]"
-                                        : "bg-white/4 border border-white/8 text-gray-600 cursor-not-allowed"
-                                }`}
-                            >
-                                {loading ? <ButtonLoader text="Verifying..." /> : <>Verify <ArrowRight size={14} strokeWidth={2.5} /></>}
-                            </button>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
         </div>
     );
 };

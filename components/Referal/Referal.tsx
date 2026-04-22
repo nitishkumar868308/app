@@ -4,9 +4,10 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Users, Copy, Share2, UserPlus, Award, Zap,
-    CheckCircle2, Clock, X, ArrowRight, Gift,
+    CheckCircle2, Clock, X, ArrowRight, ArrowLeft, Gift,
     TrendingUp, Link2, Loader2, Smartphone,
 } from "lucide-react";
+import Link from "next/link";
 import toast from "react-hot-toast";
 import api from "@/lib/axios";
 import { ENDPOINTS } from "@/lib/endpoints";
@@ -336,6 +337,7 @@ const ReferralPage = () => {
     const [showSponsor, setShowSponsor]       = useState(false);
     const [showCustom, setShowCustom]         = useState(false);
     const [showShare, setShowShare]           = useState(false);
+    const [showAllReferrals, setShowAllReferrals] = useState(false);
 
     useEffect(() => {
         if (!token) return;
@@ -413,14 +415,17 @@ const ReferralPage = () => {
     const totalReferred = referredUsers.length;
     const kycDoneCount  = referredUsers.filter((u: any) => u.reward_given).length;
 
-    // Tiered APY milestones
-    const tier          = totalReferred >= 10 ? 2 : totalReferred >= 5 ? 1 : 0;
-    const currentAPY    = ["100%", "500%", "1000%"][tier];
-    const nextAPY       = tier < 2 ? ["500%", "1000%"][tier] : "MAX";
-    const nextTarget    = tier === 0 ? 5 : tier === 1 ? 10 : 10;
-    const prevTarget    = tier === 0 ? 0 : tier === 1 ? 5 : 10;
+    // Tiered milestones (1x → 2x → 4x → 10x multiplier on base earnings)
+    const tier          = totalReferred >= 10 ? 3 : totalReferred >= 5 ? 2 : totalReferred >= 1 ? 1 : 0;
+    const MULT_LABELS   = ["1x", "2x", "4x", "10x"];
+    const currentMult   = MULT_LABELS[tier];
+    const nextMult      = tier < 3 ? MULT_LABELS[tier + 1] : "MAX";
+    const tierTargets   = [1, 5, 10, 10];
+    const tierPrev      = [0, 1, 5, 10];
+    const nextTarget    = tierTargets[tier];
+    const prevTarget    = tierPrev[tier];
     const remaining     = Math.max(0, nextTarget - totalReferred);
-    const progressPct   = tier === 2
+    const progressPct   = tier === 3
         ? 100
         : Math.min(100, Math.max(4, ((totalReferred - prevTarget) / (nextTarget - prevTarget)) * 100));
     const boostPct      = Math.min(totalReferred, 100);
@@ -455,6 +460,24 @@ const ReferralPage = () => {
                 }}
             />
 
+            {/* ── Page header with back button ── */}
+            <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35 }}
+                className="flex items-center gap-4"
+            >
+                <Link href="/dashboard">
+                    <button className="h-9 w-9 rounded-xl bg-white/5 border border-white/8 flex items-center justify-center text-gray-400 hover:text-emerald-400 hover:border-emerald-500/30 transition-all">
+                        <ArrowLeft size={16} />
+                    </button>
+                </Link>
+                <div>
+                    <h1 className="text-xl font-black text-white tracking-tight">Referrals</h1>
+                    <p className="text-sm text-gray-600 mt-0.5">Invite friends, boost your earnings</p>
+                </div>
+            </motion.div>
+
             {/* ── Hero: Boost Your Earnings ── */}
             <motion.div
                 initial={{ opacity: 0, y: 12 }}
@@ -473,30 +496,31 @@ const ReferralPage = () => {
                 </h1>
 
                 <p className="text-[13px] md:text-sm text-gray-400 mt-3">
-                    {tier === 2
-                        ? <>You&apos;ve maxed out the <span className="italic font-black text-white">Super Booster (1000% P.A.)</span>.</>
-                        : <>Invite <span className="font-black text-white">{remaining}</span> more friend{remaining === 1 ? "" : "s"} to unlock the <span className="italic font-black text-white">Super Booster ({nextAPY} P.A.)</span>.</>
+                    {tier === 3
+                        ? <>You&apos;ve maxed out the <span className="italic font-black text-white">Super Booster (10x)</span>.</>
+                        : <>Invite <span className="font-black text-white">{remaining}</span> more friend{remaining === 1 ? "" : "s"} to unlock <span className="italic font-black text-white">{nextMult} Booster</span>.</>
                     }
                 </p>
 
                 <div className="max-w-2xl mx-auto mt-8 space-y-2.5">
                     <div className="flex items-center justify-between text-[11px]">
-                        <span className="text-gray-500 italic">Current: <span className="text-white font-bold not-italic">{currentAPY}</span></span>
-                        <span className="text-emerald-400 font-black">Target: {nextAPY} P.A.</span>
+                        <span className="text-gray-500 italic">Current: <span className="text-white font-bold not-italic">{currentMult}</span></span>
+                        <span className="text-emerald-400 font-black">Target: {nextMult}</span>
                     </div>
                     <div className="h-1.5 w-full rounded-full bg-white/5 overflow-hidden">
                         <motion.div
                             initial={{ width: 0 }}
                             animate={{ width: `${progressPct}%` }}
                             transition={{ duration: 1.2, ease: "easeOut" }}
-                            className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-300"
+                            className="h-full rounded-full bg-linear-to-r from-emerald-500 to-emerald-300"
                             style={{ boxShadow: "0 0 12px rgba(16,185,129,0.65)" }}
                         />
                     </div>
-                    <div className="grid grid-cols-3 text-[10px] uppercase tracking-widest font-black pt-1">
-                        <span className="text-gray-600 text-left">0 Friends</span>
-                        <span className={tier >= 1 ? "text-emerald-400 text-center" : "text-gray-500 text-center"}>5 Friends (Unlock)</span>
-                        <span className="text-gray-600 text-right">10+ Friends</span>
+                    <div className="grid grid-cols-4 text-[10px] uppercase tracking-widest font-black pt-1">
+                        <span className={tier >= 0 ? "text-emerald-400 text-left" : "text-gray-500 text-left"}>0 Friend · 1x</span>
+                        <span className={tier >= 1 ? "text-emerald-400 text-center" : "text-gray-500 text-center"}>1 Friend · 2x</span>
+                        <span className={tier >= 2 ? "text-emerald-400 text-center" : "text-gray-500 text-center"}>5 Friends · 4x</span>
+                        <span className={tier >= 3 ? "text-emerald-400 text-right" : "text-gray-600 text-right"}>10+ · 10x</span>
                     </div>
                 </div>
             </motion.div>
@@ -620,28 +644,32 @@ const ReferralPage = () => {
                 >
                     <div className="flex items-center gap-2 mb-5">
                         <Zap size={14} className="text-emerald-400" fill="currentColor" />
-                        <h2 className="text-[15px] font-black text-white tracking-tight">P.A. Milestones</h2>
+                        <h2 className="text-[15px] font-black text-white tracking-tight">Milestones</h2>
                     </div>
 
                     <div className="space-y-2.5">
                         {[
-                            { range: "1-5 Friends",  apy: "100% P.A.",  tier: 0 },
-                            { range: "6-10 Friends", apy: "500% P.A.",  tier: 1 },
-                            { range: "10+ Friends",  apy: "1000% P.A.", tier: 2 },
+                            { range: "0 Friends",    mult: "1x",  tier: 0 },
+                            { range: "1 Friend",     mult: "2x",  tier: 1 },
+                            { range: "5 Friends",    mult: "4x",  tier: 2 },
+                            { range: "10+ Friends",  mult: "10x", tier: 3 },
                         ].map((m) => {
                             const active = m.tier === tier;
+                            const unlocked = m.tier <= tier;
                             return (
                                 <div
                                     key={m.range}
                                     className={`flex items-center justify-between rounded-xl px-4 py-3 border transition-all ${
                                         active
                                             ? "border-emerald-500/30 bg-emerald-500/5"
-                                            : "border-white/6"
+                                            : unlocked
+                                                ? "border-emerald-500/15"
+                                                : "border-white/6"
                                     }`}
                                     style={!active ? { background: "rgba(0,0,0,0.5)" } : undefined}
                                 >
-                                    <span className="text-[11px] uppercase tracking-widest font-black text-gray-400">{m.range}</span>
-                                    <span className={`text-[13px] font-black ${active ? "text-emerald-400" : "text-white"}`}>{m.apy}</span>
+                                    <span className={`text-[11px] uppercase tracking-widest font-black ${unlocked ? "text-gray-300" : "text-gray-500"}`}>{m.range}</span>
+                                    <span className={`text-[13px] font-black ${active ? "text-emerald-400" : unlocked ? "text-white" : "text-gray-500"}`}>{m.mult}</span>
                                 </div>
                             );
                         })}
@@ -657,10 +685,17 @@ const ReferralPage = () => {
                     style={{ background: "linear-gradient(180deg,#0a0f0b 0%,#040605 100%)" }}
                 >
                     <div className="flex items-center justify-between mb-5">
-                        <h2 className="text-[15px] font-black text-white tracking-tight">Recent Referrals</h2>
-                        <button className="text-[11px] uppercase tracking-widest font-black text-emerald-400 hover:text-emerald-300 inline-flex items-center gap-1 transition-colors">
-                            View All <ArrowRight size={10} />
-                        </button>
+                        <h2 className="text-[15px] font-black text-white tracking-tight">
+                            {showAllReferrals ? "All Referrals" : "Recent Referrals"}
+                        </h2>
+                        {referredUsers.length > 5 && (
+                            <button
+                                onClick={() => setShowAllReferrals((v) => !v)}
+                                className="text-[11px] uppercase tracking-widest font-black text-emerald-400 hover:text-emerald-300 inline-flex items-center gap-1 transition-colors"
+                            >
+                                {showAllReferrals ? "Show Less" : `View All (${referredUsers.length})`} <ArrowRight size={10} />
+                            </button>
+                        )}
                     </div>
 
                     {referredUsers.length === 0 ? (
@@ -678,8 +713,8 @@ const ReferralPage = () => {
                                 <span className="col-span-3 text-right">Reward</span>
                             </div>
 
-                            <div className="divide-y divide-white/4">
-                                {referredUsers.slice(0, 5).map((item: any, i: number) => {
+                            <div className={`divide-y divide-white/4 ${showAllReferrals ? "max-h-96 overflow-y-auto" : ""}`}>
+                                {(showAllReferrals ? referredUsers : referredUsers.slice(0, 5)).map((item: any, i: number) => {
                                     const refUser = item.referred_to || {};
                                     const firstName = refUser.first_name || "";
                                     const lastName  = refUser.last_name || "";
@@ -738,9 +773,9 @@ const ReferralPage = () => {
                 <p className="text-[10px] md:text-[11px] uppercase tracking-widest text-gray-600 font-black">
                     *Rewards are credited after KYC verification. P.A. boost is valid for 30 days.
                 </p>
-                <button className="text-[12px] text-gray-400 hover:text-emerald-400 underline underline-offset-4 mt-2 font-black transition-colors">
+                {/* <button className="text-[12px] text-gray-400 hover:text-emerald-400 underline underline-offset-4 mt-2 font-black transition-colors">
                     Read full referral policy & terms
-                </button>
+                </button> */}
             </motion.div>
 
             {/* Inline banner if earned missing but we want a subtle Gift cue - removed for clean layout */}

@@ -151,12 +151,12 @@ const MarketChart = () => {
                         <span className="text-2xl font-black text-white">
                             {latestPrice > 0 ? `₹${latestPrice.toFixed(4)}` : "₹—"}
                         </span>
-                        {values.length > 1 && (
+                        {/* {values.length > 1 && (
                             <span className={`flex items-center gap-1 text-sm font-bold mb-0.5 ${isPositive ? "text-emerald-400" : "text-red-400"}`}>
                                 {isPositive ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
                                 {isPositive ? "+" : ""}{priceChange.toFixed(2)}%
                             </span>
-                        )}
+                        )} */}
                     </div>
                 </div>
 

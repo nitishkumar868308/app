@@ -8,6 +8,7 @@ import {
     Upload, Hash, Image as ImageIcon, X, Loader2,
     CheckCircle2, Copy,
 } from "lucide-react";
+import Link from "next/link";
 import { useWallet } from "@/context/WalletContext";
 import toast from "react-hot-toast";
 import api, { API_BASE_URL } from "@/lib/axios";
@@ -172,13 +173,23 @@ const AddFund = () => {
                 className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
             >
                 <div className="flex items-center gap-4">
-                    {step === "proof" && (
+                    {step === "proof" ? (
                         <button
                             onClick={() => setStep("amount")}
                             className="h-9 w-9 rounded-xl bg-white/5 border border-white/8 flex items-center justify-center text-gray-400 hover:text-emerald-400 hover:border-emerald-500/30 transition-all"
+                            aria-label="Back to amount step"
                         >
                             <ArrowLeft size={16} />
                         </button>
+                    ) : (
+                        <Link href="/dashboard">
+                            <button
+                                className="h-9 w-9 rounded-xl bg-white/5 border border-white/8 flex items-center justify-center text-gray-400 hover:text-emerald-400 hover:border-emerald-500/30 transition-all"
+                                aria-label="Back to dashboard"
+                            >
+                                <ArrowLeft size={16} />
+                            </button>
+                        </Link>
                     )}
                     <div>
                         <h1 className="text-xl font-black text-white tracking-tight">Add Funds</h1>

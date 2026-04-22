@@ -45,56 +45,29 @@ const iconMap = {
     offer:       { icon: Coins,         color: "text-rose-400",    bg: "bg-rose-500/10 border-rose-500/20" },
 };
 
-const INITIAL_NOTIFICATIONS: Notification[] = [
-    {
-        id: "n1",
-        title: "Signup Bonus Credited",
-        message: "965.0065 YTP has been added to your wallet as a welcome reward.",
-        time: "2 hours ago",
-        read: false,
-        type: "reward",
-    },
-    {
-        id: "n2",
-        title: "KYC Verification Complete",
-        message: "Your identity has been successfully verified. All features are now unlocked.",
-        time: "1 day ago",
-        read: false,
-        type: "security",
-    },
-    {
-        id: "n3",
-        title: "Staking Reward Received",
-        message: "You earned 12.50 YTP from your EARNER staking plan.",
-        time: "2 days ago",
-        read: false,
-        type: "transaction",
-    },
-    {
-        id: "n4",
-        title: "New Offer: Staking Pass",
-        message: "Complete tasks to unlock 10,000 YTP. Limited time offer!",
-        time: "3 days ago",
-        read: true,
-        type: "offer",
-    },
-    {
-        id: "n5",
-        title: "Fund Added Successfully",
-        message: "₹2,000 has been credited to your account via UPI.",
-        time: "5 days ago",
-        read: true,
-        type: "transaction",
-    },
-    {
-        id: "n6",
-        title: "Security Alert",
-        message: "New login detected from Mumbai, India. If this wasn't you, secure your account.",
-        time: "1 week ago",
-        read: true,
-        type: "security",
-    },
-];
+// Relative time formatter (e.g. "2 hours ago")
+const relTime = (iso: string): string => {
+    try {
+        const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+        if (!Number.isFinite(diff) || diff < 0) return "just now";
+        if (diff < 60)          return "just now";
+        if (diff < 3600)        return `${Math.floor(diff / 60)} min ago`;
+        if (diff < 86400)       return `${Math.floor(diff / 3600)} hours ago`;
+        if (diff < 604800)      return `${Math.floor(diff / 86400)} days ago`;
+        return new Date(iso).toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
+    } catch { return ""; }
+};
+
+// Backend NotificationFeed category → frontend icon type
+const mapCategoryToType = (category: string, level: string): Notification["type"] => {
+    const c = (category || "").toLowerCase();
+    const l = (level || "").toUpperCase();
+    if (c.includes("reward") || c.includes("bonus") || c.includes("referral")) return "reward";
+    if (c.includes("stak") || c.includes("transaction") || c.includes("withdraw") || c.includes("deposit") || c.includes("transfer")) return "transaction";
+    if (c.includes("kyc") || c.includes("security") || c.includes("auth") || c.includes("login") || l === "WARNING") return "security";
+    if (c.includes("offer") || c.includes("promo")) return "offer";
+    return "system";
+};
 
 // ─── Header ───────────────────────────────────────────────────────────────────
 
@@ -107,9 +80,29 @@ const Header = () => {
         ? `${authUser.first_name?.[0] || ""}${authUser.last_name?.[0] || ""}`.toUpperCase() || "U"
         : "U";
     const [open, setOpen]                   = useState(false);
-    const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
+    const [notifications, setNotifications] = useState<Notification[]>([]);
     const panelRef                          = useRef<HTMLDivElement>(null);
     const [ytpInrPrice, setYtpInrPrice]     = useState<number | null>(null);
+
+    // Fetch notification feed from backend
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await api.get(ENDPOINTS.NOTIFICATION_FEED_LIST);
+                const raw = res.data?.data ?? res.data?.results ?? res.data;
+                const list = Array.isArray(raw) ? raw : [];
+                const mapped: Notification[] = list.map((n: any) => ({
+                    id:      String(n.id ?? Math.random()),
+                    title:   n.title || "Notification",
+                    message: n.message || n.reason || "",
+                    time:    n.created_at ? relTime(n.created_at) : "",
+                    read:    !!n.is_read,
+                    type:    mapCategoryToType(n.category || "", n.level || ""),
+                }));
+                setNotifications(mapped);
+            } catch { /* silent — backend endpoint may not exist yet */ }
+        })();
+    }, []);
 
     // Fetch YTP INR price
     useEffect(() => {
@@ -138,20 +131,24 @@ const Header = () => {
 
     const markAllRead = () => {
         setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+        api.post(ENDPOINTS.NOTIFICATION_FEED_MARK_READ, { all: true }).catch(() => {});
     };
 
     const markRead = (id: string) => {
         setNotifications((prev) =>
             prev.map((n) => (n.id === id ? { ...n, read: true } : n))
         );
+        api.post(ENDPOINTS.NOTIFICATION_FEED_MARK_READ, { id }).catch(() => {});
     };
 
     const removeNotification = (id: string) => {
         setNotifications((prev) => prev.filter((n) => n.id !== id));
+        api.post(ENDPOINTS.NOTIFICATION_FEED_CLEAR, { id }).catch(() => {});
     };
 
     const clearAll = () => {
         setNotifications([]);
+        api.post(ENDPOINTS.NOTIFICATION_FEED_CLEAR, { all: true }).catch(() => {});
     };
 
     return (
@@ -183,7 +180,7 @@ const Header = () => {
                         />
                     </Link>
                     {ytpInrPrice !== null && (
-                        <div className="flex items-center gap-1.5 bg-white/4 border border-white/8 rounded-xl px-2.5 py-1.5">
+                        <div className="hidden sm:flex items-center gap-1.5 bg-white/4 border border-white/8 rounded-xl px-2.5 py-1.5">
                             <span className="text-[11px] text-gray-500 font-bold uppercase tracking-wider">YTP</span>
                             <span className="text-[13px] font-black text-emerald-400">₹{ytpInrPrice.toFixed(4)}</span>
                         </div>

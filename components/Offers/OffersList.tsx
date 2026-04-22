@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, Flame, CheckCircle2 } from "lucide-react";
+import { ArrowRight, ArrowLeft, Flame, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import api from "@/lib/axios";
 import { ENDPOINTS } from "@/lib/endpoints";
@@ -65,20 +65,27 @@ const OffersList = () => {
     return (
         <div className="w-full max-w-7xl mx-auto px-4 md:px-6 py-8 space-y-6">
 
-            {/* ── Page header ── */}
+            {/* ── Page header with back button ── */}
             <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.35 }}
-                className="text-center space-y-2"
+                className="flex items-center gap-4"
             >
-                <div className="flex items-center justify-center gap-2 mb-1">
-                    <Flame size={20} className="text-amber-400" />
+                <Link href="/dashboard">
+                    <button className="h-9 w-9 rounded-xl bg-white/5 border border-white/8 flex items-center justify-center text-gray-400 hover:text-emerald-400 hover:border-emerald-500/30 transition-all">
+                        <ArrowLeft size={16} />
+                    </button>
+                </Link>
+                <div className="flex items-center gap-2">
+                    <Flame size={20} className="text-amber-400 shrink-0" />
+                    <div>
+                        <h1 className="text-xl font-black text-white tracking-tight">All Offers</h1>
+                        <p className="text-sm text-gray-600 mt-0.5">
+                            Complete tasks to unlock rewards, boosts, and exclusive drops
+                        </p>
+                    </div>
                 </div>
-                <h1 className="text-2xl font-black text-white tracking-tight">All Offers</h1>
-                <p className="text-sm text-gray-600 max-w-md mx-auto">
-                    Complete tasks to unlock rewards, boosts, and exclusive drops
-                </p>
             </motion.div>
 
             {/* ── Offers grid ── */}

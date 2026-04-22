@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import {
     User, Mail, Phone, MapPin, Calendar, Shield,
     CheckCircle2, AlertCircle, Edit3, Camera,
-    Copy, Award, Users,
+    Copy, Award, Users, ArrowLeft,
     Wallet, TrendingUp, Clock, LogOut, Settings,
     ChevronRight, Lock, KeyRound, ExternalLink,
     Coins, Lock as LockIcon,
@@ -270,6 +270,24 @@ const Profile = () => {
                 onSuccess={handlePinSuccess}
                 mode={pinModal.mode}
             />
+
+            {/* ── Page header with back button ── */}
+            <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35 }}
+                className="flex items-center gap-4"
+            >
+                <Link href="/dashboard">
+                    <button className="h-9 w-9 rounded-xl bg-white/5 border border-white/8 flex items-center justify-center text-gray-400 hover:text-emerald-400 hover:border-emerald-500/30 transition-all">
+                        <ArrowLeft size={16} />
+                    </button>
+                </Link>
+                <div>
+                    <h1 className="text-xl font-black text-white tracking-tight">Profile</h1>
+                    <p className="text-sm text-gray-600 mt-0.5">Manage your account and security</p>
+                </div>
+            </motion.div>
 
             {/* ── Profile hero ── */}
             <motion.div

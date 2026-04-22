@@ -3,55 +3,21 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    Mail, User, ArrowRight, ShieldCheck, Lock,
-    Smartphone, UserPlus, CheckCircle2, Eye, EyeOff,
-    Shield, Zap, Globe, TrendingUp,
+    Mail, Lock, ArrowRight, ShieldCheck, Eye, EyeOff,
+    KeyRound, CheckCircle2, Shield, Zap, Globe, TrendingUp,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import api from "@/lib/axios";
 import { ENDPOINTS } from "@/lib/endpoints";
 import { getApiError } from "@/lib/helpers";
 import { OverlayLoader, ButtonLoader } from "@/components/Include/Loader";
-import { useAuth } from "@/context/AuthContext";
-import { setAuthToken } from "@/lib/auth";
 
 // ─── Steps ────────────────────────────────────────────────────────────────────
 
-type Step = "phone" | "phone_otp" | "email" | "email_otp" | "profile";
-
-// ─── Main ─────────────────────────────────────────────────────────────────────
-
-// ─── Session persistence helpers ──────────────────────────────────────────────
-
-const SESSION_KEY = "ytp_reg_progress";
-
-interface RegProgress {
-    phone: string;
-    email: string;
-    step: Step;
-    phoneVerified: boolean;
-    emailVerified: boolean;
-}
-
-const saveProgress = (data: RegProgress) => {
-    if (typeof window !== "undefined") {
-        sessionStorage.setItem(SESSION_KEY, JSON.stringify(data));
-    }
-};
-
-const loadProgress = (): RegProgress | null => {
-    if (typeof window === "undefined") return null;
-    try {
-        const raw = sessionStorage.getItem(SESSION_KEY);
-        return raw ? (JSON.parse(raw) as RegProgress) : null;
-    } catch { return null; }
-};
-
-const clearProgress = () => {
-    if (typeof window !== "undefined") sessionStorage.removeItem(SESSION_KEY);
-};
+type Step = "identifier" | "otp" | "reset";
 
 // ─── Resend timer hook ────────────────────────────────────────────────────────
 
@@ -82,243 +48,142 @@ const useResendTimer = (seconds = 30) => {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-const Register = () => {
-    const { login, saveVerifyToken, clearVerifyToken } = useAuth();
+const ForgotPassword = () => {
+    const router = useRouter();
 
-    // Restore progress from sessionStorage
-    const saved = useRef(loadProgress());
-
-    const [phone, setPhone]               = useState(saved.current?.phone || "");
-    const [email, setEmail]               = useState(saved.current?.email || "");
-    const [name, setName]                 = useState("");
-    const [referral, setReferral]         = useState("");
-    const [password, setPassword]         = useState("");
+    const [step, setStep]                     = useState<Step>("identifier");
+    const [identifier, setIdentifier]         = useState("");
+    const [otp, setOtp]                       = useState("");
+    const [password, setPassword]             = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
-    const [showPass, setShowPass]         = useState(false);
-    const [showConfirm, setShowConfirm]   = useState(false);
+    const [showPass, setShowPass]             = useState(false);
+    const [showConfirm, setShowConfirm]       = useState(false);
+    const [resetToken, setResetToken]         = useState("");
+    const [loading, setLoading]               = useState(false);
 
-    const [step, setStep]                 = useState<Step>(saved.current?.step || "phone");
-    const [otp, setOtp]                   = useState("");
-    const [loading, setLoading]           = useState(false);
-    const [phoneVerified, setPhoneVerified] = useState(saved.current?.phoneVerified || false);
-    const [emailVerified, setEmailVerified] = useState(saved.current?.emailVerified || false);
+    const otpTimer = useResendTimer(30);
 
-    // Resend timers
-    const phoneTimer = useResendTimer(30);
-    const emailTimer = useResendTimer(30);
+    // Build payload from identifier (email vs phone)
+    const buildIdentifierPayload = useCallback(() => {
+        const v = identifier.trim();
+        return v.includes("@") ? { email: v } : { phone_no: v };
+    }, [identifier]);
 
-    // Persist progress on key state changes
-    useEffect(() => {
-        saveProgress({ phone, email, step, phoneVerified, emailVerified });
-    }, [phone, email, step, phoneVerified, emailVerified]);
+    // ── Step 1: Send OTP ──────────────────────────────────────────────────────
 
-    // ── API handlers ──────────────────────────────────────────────────────────
+    const handleSendOtp = useCallback(async () => {
+        const v = identifier.trim();
+        if (!v) return toast.error("Email or phone number is required.");
 
-    const handleSendPhoneOtp = useCallback(async () => {
-        if (!phone.trim()) return toast.error("Phone number is required.");
-        if (!/^[6-9]\d{9}$/.test(phone.trim())) return toast.error("Enter a valid 10-digit mobile number.");
+        const isEmail = v.includes("@");
+        if (!isEmail && !/^[6-9]\d{9}$/.test(v)) {
+            return toast.error("Enter a valid email or 10-digit mobile number.");
+        }
 
         setLoading(true);
         try {
-            const res = await api.post(ENDPOINTS.SEND_MOBILE_OTP, { phone_no: phone.trim() });
-            const data = res.data;
-
-            if (data?.data?.token) {
-                setAuthToken(data.data.token);
-                toast.success(data.message || "Profile pending. Continuing...");
-                setPhoneVerified(true);
-                setEmailVerified(true);
-                setStep("profile");
-                return;
-            }
-            if (data?.data?.verify_token) {
-                saveVerifyToken(data.data.verify_token);
-                toast.success(data.message || "Phone already verified.");
-                setPhoneVerified(true);
-                setStep("email");
-                return;
-            }
-            toast.success(data?.message || "OTP sent to your WhatsApp.");
-            phoneTimer.start();
-            setStep("phone_otp");
+            const res = await api.post(ENDPOINTS.FORGOT_ACCOUNT, buildIdentifierPayload());
+            toast.success(res.data?.message || "OTP sent.");
+            otpTimer.start();
+            setStep("otp");
         } catch (err) {
             toast.error(getApiError(err));
         } finally {
             setLoading(false);
         }
-    }, [phone]);
+    }, [identifier, buildIdentifierPayload, otpTimer]);
 
-    const handleVerifyPhoneOtp = useCallback(async () => {
-        if (otp.length < 4) return toast.error("Enter a valid OTP.");
+    // ── Step 2: Verify OTP ────────────────────────────────────────────────────
+
+    const handleVerifyOtp = useCallback(async () => {
+        if (otp.length !== 6) return toast.error("Enter the 6-digit code.");
+
         setLoading(true);
         try {
-            const res = await api.post(ENDPOINTS.VERIFY_PHONE_OTP, {
-                phone_no: phone.trim(),
-                whatsapp_otp: otp,
+            const res = await api.post(ENDPOINTS.VERIFY_FORGOT_OTP, {
+                ...buildIdentifierPayload(),
+                otp,
             });
-            if (res.data?.data?.verify_token) {
-                saveVerifyToken(res.data.data.verify_token);
-            }
-            toast.success(res.data?.message || "Phone verified!");
-            setPhoneVerified(true);
-            setOtp("");
-            setStep("email");
-        } catch (err) {
-            toast.error(getApiError(err));
-        } finally {
-            setLoading(false);
-        }
-    }, [phone, otp]);
 
-    const handleSendEmailOtp = useCallback(async () => {
-        if (!email.trim()) return toast.error("Email is required.");
-        setLoading(true);
-        try {
-            const res = await api.post(ENDPOINTS.SEND_EMAIL_OTP, { email: email.trim() });
-            if (res.data?.data?.token) {
-                setAuthToken(res.data.data.token);
-                toast.success(res.data.message || "Email already verified.");
-                setEmailVerified(true);
-                setStep("profile");
+            const token = res.data?.data?.reset_token;
+            if (!token) {
+                toast.error("Invalid OTP. Please try again.");
                 return;
             }
-            toast.success(res.data?.message || "OTP sent to your email.");
-            emailTimer.start();
-            setStep("email_otp");
-        } catch (err) {
-            toast.error(getApiError(err));
-        } finally {
-            setLoading(false);
-        }
-    }, [email]);
 
-    const handleVerifyEmailOtp = useCallback(async () => {
-        if (otp.length !== 6) return toast.error("Enter a valid 6-digit OTP.");
-        setLoading(true);
-        try {
-            const res = await api.post(ENDPOINTS.VERIFY_EMAIL_OTP, {
-                email: email.trim(),
-                email_otp: otp,
-            });
-            if (res.data?.data?.token) {
-                setAuthToken(res.data.data.token);
-            }
-            toast.success(res.data?.message || "Email verified!");
-            setEmailVerified(true);
+            setResetToken(token);
+            toast.success(res.data?.message || "OTP verified!");
             setOtp("");
-            setStep("profile");
+            setStep("reset");
         } catch (err) {
             toast.error(getApiError(err));
         } finally {
             setLoading(false);
         }
-    }, [email, otp]);
+    }, [otp, buildIdentifierPayload]);
 
-    const handleCompleteProfile = useCallback(async () => {
-        if (!name.trim() || name.trim().length < 2) return toast.error("Name must be at least 2 characters.");
+    // ── Step 3: Reset Password ────────────────────────────────────────────────
+
+    const handleResetPassword = useCallback(async () => {
         if (!password) return toast.error("Password is required.");
         if (password.length < 6) return toast.error("Password must be at least 6 characters.");
         if (password !== confirmPassword) return toast.error("Passwords do not match.");
 
         setLoading(true);
         try {
-            await api.post(ENDPOINTS.REGISTER_FIRST, {
-                first_name: name.trim(),
-                last_name: "",
-                referral_id: referral.trim() || "",
-            });
-
-            // Second register: set password — returns token + user
-            const res = await api.post(ENDPOINTS.REGISTER_SECOND, {
-                password: password,
+            const res = await api.post(ENDPOINTS.FORGOT_PASSWORD, {
+                ...buildIdentifierPayload(),
+                reset_token: resetToken,
+                password1: password,
                 password2: confirmPassword,
             });
 
-            const resData = res.data?.data;
-            const token = resData?.token || resData?.user?.token;
-            const userData = resData?.user || resData;
-
-            if (token && userData) {
-                login(token, {
-                    id:                userData.id,
-                    first_name:        userData.first_name || "",
-                    last_name:         userData.last_name || "",
-                    email:             userData.email || "",
-                    phone_no:          userData.phone_no || "",
-                    avatar:            userData.avatar || null,
-                    pin_status:        userData.pin_status ?? false,
-                    role:              userData.role ?? 0,
-                    referral_id:       userData.referral_id || null,
-                    referred_by_name:  userData.referred_by_name || null,
-                    is_investor:       userData.is_investor ?? false,
-                    google2fa_enable:  userData.google2fa_enable ?? false,
-                    google2fa_qr_code: userData.google2fa_qr_code || null,
-                });
-            }
-
-            clearVerifyToken();
-            clearProgress();
-            toast.success("Account created successfully!");
-            window.location.href = "/dashboard";
+            toast.success(res.data?.message || "Password reset successfully!");
+            router.push("/login");
         } catch (err) {
             toast.error(getApiError(err));
         } finally {
             setLoading(false);
         }
-    }, [name, referral, password, confirmPassword, login, clearVerifyToken]);
+    }, [password, confirmPassword, resetToken, buildIdentifierPayload, router]);
 
-    const handleResendPhoneOtp = useCallback(async () => {
-        if (!phoneTimer.canResend) return;
+    // ── Resend OTP ────────────────────────────────────────────────────────────
+
+    const handleResendOtp = useCallback(async () => {
+        if (!otpTimer.canResend) return;
         try {
-            const res = await api.post(ENDPOINTS.RESEND_MOBILE_OTP, { phone_no: phone.trim() });
+            const res = await api.post(ENDPOINTS.FORGOT_RESEND_OTP, buildIdentifierPayload());
             toast.success(res.data?.message || "OTP resent.");
-            phoneTimer.start();
+            otpTimer.start();
         } catch (err) {
             toast.error(getApiError(err));
         }
-    }, [phone, phoneTimer]);
-
-    const handleResendEmailOtp = useCallback(async () => {
-        if (!emailTimer.canResend) return;
-        try {
-            const res = await api.post(ENDPOINTS.RESEND_EMAIL_OTP, { email: email.trim() });
-            toast.success(res.data?.message || "OTP resent.");
-            emailTimer.start();
-        } catch (err) {
-            toast.error(getApiError(err));
-        }
-    }, [email, emailTimer]);
+    }, [buildIdentifierPayload, otpTimer]);
 
     // ── Step index for left panel ─────────────────────────────────────────────
 
-    const stepIndex = step === "phone" || step === "phone_otp" ? 0
-        : step === "email" || step === "email_otp" ? 1 : 2;
+    const stepIndex = step === "identifier" ? 0 : step === "otp" ? 1 : 2;
 
     const stepItems = [
-        { label: "Phone Verification", sub: "WhatsApp OTP", done: phoneVerified, icon: Smartphone },
-        { label: "Email Verification",  sub: "Email OTP",    done: emailVerified, icon: Mail },
-        { label: "Create Password",     sub: "Password", done: false,     icon: User },
+        { label: "Enter Account", sub: "Email / Phone", icon: Mail, done: stepIndex > 0 },
+        { label: "Verify OTP",    sub: "6-digit code",  icon: KeyRound, done: stepIndex > 1 },
+        { label: "Reset Password", sub: "New password", icon: Lock, done: false },
     ];
+
+    const loaderText =
+        step === "identifier" ? "Sending OTP..."
+        : step === "otp" ? "Verifying OTP..."
+        : "Resetting Password...";
 
     return (
         <div className="min-h-screen bg-[#000000] text-white w-full flex items-center justify-center relative overflow-hidden p-3 sm:p-5">
 
-            {/* Centered Overlay Loader */}
-            <OverlayLoader
-                show={loading}
-                text={
-                    step === "phone" ? "Sending OTP..." :
-                    step === "phone_otp" ? "Verifying Phone..." :
-                    step === "email" ? "Sending Email OTP..." :
-                    step === "email_otp" ? "Verifying Email..." :
-                    "Creating Account..."
-                }
-            />
+            <OverlayLoader show={loading} text={loaderText} />
 
-            {/* Background */}
+            {/* ── Background ── */}
             <div className="absolute inset-0 z-0 pointer-events-none">
-                <div className="absolute top-[-15%] left-[-10%] w-150 h-150 bg-emerald-500/8 rounded-full blur-[140px]" />
-                <div className="absolute bottom-[-20%] right-[-10%] w-175 h-175 bg-green-600/6 rounded-full blur-[160px]" />
+                <div className="absolute top-[-15%] left-[-10%] w-162.5 h-162.5 bg-emerald-500/8 rounded-full blur-[160px]" />
+                <div className="absolute bottom-[-20%] right-[-10%] w-175 h-175 bg-green-600/6 rounded-full blur-[180px]" />
                 <div
                     className="absolute inset-0 opacity-[0.02]"
                     style={{
@@ -327,21 +192,19 @@ const Register = () => {
                         backgroundSize: "60px 60px",
                     }}
                 />
-
-                {/* Floating currency symbols */}
                 {[
-                    { char: "$", top: "8%",  left: "4%",  delay: 0,   size: "text-7xl md:text-9xl" },
-                    { char: "₹", top: "38%", left: "88%", delay: 2.5, size: "text-6xl md:text-8xl" },
-                    { char: "€", top: "72%", left: "7%",  delay: 4,   size: "text-7xl md:text-9xl" },
-                    { char: "£", top: "82%", left: "78%", delay: 1,   size: "text-5xl md:text-7xl" },
-                    { char: "₿", top: "18%", left: "72%", delay: 3,   size: "text-6xl md:text-8xl" },
+                    { char: "$", top: "8%",  left: "4%",  delay: 0,   size: "text-8xl md:text-9xl" },
+                    { char: "₹", top: "42%", left: "88%", delay: 2.5, size: "text-7xl md:text-8xl" },
+                    { char: "€", top: "70%", left: "6%",  delay: 4,   size: "text-8xl md:text-9xl" },
+                    { char: "£", top: "83%", left: "78%", delay: 1,   size: "text-6xl md:text-7xl" },
+                    { char: "₿", top: "18%", left: "72%", delay: 3,   size: "text-7xl md:text-8xl" },
                 ].map((item, i) => (
                     <motion.div
                         key={i}
                         initial={{ y: 0, opacity: 0 }}
-                        animate={{ y: [0, -40, 0], opacity: [0.2, 0.5, 0.2] }}
-                        transition={{ duration: 7, repeat: Infinity, delay: item.delay, ease: "easeInOut" }}
-                        className={`absolute font-black select-none text-emerald-400/25 drop-shadow-[0_0_30px_rgba(16,185,129,0.2)] ${item.size}`}
+                        animate={{ y: [0, -38, 0], opacity: [0.2, 0.5, 0.2] }}
+                        transition={{ duration: 7 + i * 0.4, repeat: Infinity, delay: item.delay, ease: "easeInOut" }}
+                        className={`absolute font-black select-none text-emerald-400/25 drop-shadow-[0_0_28px_rgba(16,185,129,0.2)] ${item.size}`}
                         style={{ top: item.top, left: item.left }}
                     >
                         {item.char}
@@ -349,7 +212,7 @@ const Register = () => {
                 ))}
             </div>
 
-            {/* Main Card */}
+            {/* ── Main Card ── */}
             <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -357,27 +220,23 @@ const Register = () => {
                 className="relative z-10 w-full max-w-5xl grid grid-cols-1 lg:grid-cols-5 rounded-3xl border border-white/6 overflow-hidden shadow-2xl shadow-black/40"
                 style={{ background: "rgba(10,26,15,0.85)", backdropFilter: "blur(24px)" }}
             >
-                {/* Top accent */}
                 <div className="absolute top-0 left-0 w-full h-px bg-linear-to-r from-transparent via-emerald-400/60 to-transparent z-20" />
 
                 {/* ══════════════════════════════════════════════════════════════
-                    LEFT PANEL — Branding + Animated Visual
+                    LEFT PANEL — Branding + Progress
                    ══════════════════════════════════════════════════════════════ */}
                 <div className="lg:col-span-2 p-6 md:p-8 relative border-b lg:border-b-0 lg:border-r border-white/5 flex flex-col justify-between overflow-hidden"
                     style={{ background: "linear-gradient(160deg, rgba(16,185,129,0.08) 0%, rgba(10,26,15,0.95) 60%)" }}
                 >
-                    {/* Decorative orbs */}
                     <div className="absolute -top-20 -left-20 w-60 h-60 bg-emerald-500/10 rounded-full blur-[80px] pointer-events-none" />
                     <div className="absolute -bottom-16 -right-16 w-48 h-48 bg-emerald-400/8 rounded-full blur-[60px] pointer-events-none" />
 
-                    {/* Logo */}
                     <div className="relative z-10">
                         <Image src="/logo.png" alt="YatriPay" width={130} height={36} className="h-8 w-auto object-contain mb-8" priority />
 
-                        {/* Animated visual — floating security shield */}
-                        <div className="hidden lg:flex items-center justify-center py-6 mb-6">
+                        {/* Animated lock visual — desktop */}
+                        <div className="hidden lg:flex items-center justify-center py-4 mb-6">
                             <div className="relative">
-                                {/* Outer ring pulse */}
                                 <motion.div
                                     animate={{ scale: [1, 1.15, 1], opacity: [0.15, 0, 0.15] }}
                                     transition={{ duration: 3, repeat: Infinity }}
@@ -388,37 +247,29 @@ const Register = () => {
                                     transition={{ duration: 3, repeat: Infinity, delay: 0.5 }}
                                     className="absolute inset-0 -m-3 rounded-full border border-emerald-500/15"
                                 />
-
-                                {/* Main shield */}
                                 <motion.div
-                                    animate={{ y: [0, -8, 0] }}
+                                    animate={{ y: [0, -6, 0] }}
                                     transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                                     className="h-24 w-24 rounded-3xl bg-linear-to-br from-emerald-500/20 to-emerald-500/5 border border-emerald-500/25 flex items-center justify-center shadow-xl shadow-emerald-500/10"
                                 >
-                                    <ShieldCheck size={40} className="text-emerald-400" strokeWidth={1.5} />
+                                    <KeyRound size={38} className="text-emerald-400" strokeWidth={1.5} />
                                 </motion.div>
-
-                                {/* Orbiting dots */}
-                                {[0, 1, 2, 3].map((i) => (
-                                    <motion.div
-                                        key={i}
-                                        animate={{ rotate: 360 }}
-                                        transition={{ duration: 8 + i * 2, repeat: Infinity, ease: "linear" }}
-                                        className="absolute inset-0 -m-10"
-                                        style={{ transformOrigin: "center center" }}
-                                    >
-                                        <div
-                                            className="h-2 w-2 rounded-full bg-emerald-400/40"
-                                            style={{ position: "absolute", top: i % 2 === 0 ? 0 : "auto", bottom: i % 2 !== 0 ? 0 : "auto", left: i < 2 ? 0 : "auto", right: i >= 2 ? 0 : "auto" }}
-                                        />
-                                    </motion.div>
-                                ))}
                             </div>
                         </div>
 
+                        <h2 className="hidden lg:block text-2xl font-black leading-tight mb-2 text-white">
+                            Recover{" "}
+                            <span className="bg-linear-to-r from-emerald-300 to-green-400 bg-clip-text text-transparent">
+                                Access.
+                            </span>
+                        </h2>
+                        <p className="hidden lg:block text-gray-500 text-xs leading-relaxed mb-8">
+                            Reset your password in just 3 simple steps and get back to your portfolio.
+                        </p>
+
                         {/* Step progress — desktop */}
-                        <div className="hidden lg:block space-y-2.5 mb-8">
-                            <p className="text-[13px] text-gray-600 uppercase tracking-widest font-black mb-3">Registration Progress</p>
+                        <div className="hidden lg:block space-y-2.5 mb-6">
+                            <p className="text-[13px] text-gray-600 uppercase tracking-widest font-black mb-3">Reset Progress</p>
                             {stepItems.map((s, i) => {
                                 const Icon = s.icon;
                                 const active = i === stepIndex;
@@ -453,10 +304,10 @@ const Register = () => {
                     {/* Trust badges — desktop */}
                     <div className="hidden lg:grid grid-cols-2 gap-2 relative z-10">
                         {[
-                            { icon: Shield,     label: "3+ Years of Trust" },
-                            { icon: Zap,        label: "1M+ Transaction" },
-                            { icon: Globe,      label: "10,000+ Users" },
-                            { icon: TrendingUp, label: "Dedicated Blockchain" },
+                            { icon: Shield,     label: "AES-256 Encrypted" },
+                            { icon: Zap,        label: "Instant Reset" },
+                            { icon: Globe,      label: "Secure OTP" },
+                            { icon: TrendingUp, label: "24/7 Support" },
                         ].map((b, i) => (
                             <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-white/3 border border-white/4">
                                 <b.icon size={11} className="text-emerald-500/60 shrink-0" />
@@ -468,10 +319,10 @@ const Register = () => {
                     {/* Mobile compact */}
                     <div className="lg:hidden flex items-center gap-3">
                         <div className="h-10 w-10 rounded-xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center shrink-0">
-                            <ShieldCheck size={18} className="text-emerald-400" />
+                            <KeyRound size={18} className="text-emerald-400" />
                         </div>
                         <div>
-                            <h3 className="text-sm font-black text-white">Create Account</h3>
+                            <h3 className="text-sm font-black text-white">Forgot Password</h3>
                             <p className="text-[12px] text-gray-600">Step {stepIndex + 1} of 3 — {stepItems[stepIndex].label}</p>
                         </div>
                     </div>
@@ -483,146 +334,77 @@ const Register = () => {
                 <div className="lg:col-span-3 p-6 md:p-8 lg:p-10">
 
                     <AnimatePresence mode="wait">
-                        {/* ── STEP: Phone ── */}
-                        {step === "phone" && (
-                            <StepWrap key="phone">
+                        {/* ── STEP 1: Identifier ── */}
+                        {step === "identifier" && (
+                            <StepWrap key="identifier">
                                 <StepHead
-                                    title="Enter Phone Number"
-                                    sub="We'll send an OTP to your WhatsApp for verification."
+                                    title="Find Your Account"
+                                    sub="Enter the email or phone number linked to your account."
                                     step="Step 1 of 3"
                                 />
                                 <Field
-                                    label="Mobile Number"
-                                    icon={<Smartphone size={16} />}
-                                    type="tel"
-                                    placeholder="9876543210"
-                                    value={phone}
-                                    onChange={(v) => setPhone(v.replace(/\D/g, "").slice(0, 10))}
-                                    prefix="+91"
-                                />
-                                <ActionBtn label="Send OTP" loading={loading} onClick={handleSendPhoneOtp} />
-                            </StepWrap>
-                        )}
-
-                        {/* ── STEP: Phone OTP ── */}
-                        {step === "phone_otp" && (
-                            <StepWrap key="phone_otp">
-                                <StepHead
-                                    title="Verify Phone"
-                                    sub={`Enter the code sent to +91 ${phone}`}
-                                    step="Step 1 of 3"
-                                />
-                                <OtpBoxes value={otp} onChange={setOtp} length={6} />
-                                <ActionBtn label="Verify" loading={loading} onClick={handleVerifyPhoneOtp} />
-                                <div className="flex items-center justify-between mt-4">
-                                    <button onClick={() => { setStep("phone"); setOtp(""); }} className="text-[13px] text-gray-600 hover:text-gray-400 transition-colors">
-                                        ← Change number
-                                    </button>
-                                    <button
-                                        onClick={handleResendPhoneOtp}
-                                        disabled={!phoneTimer.canResend}
-                                        className={`text-[13px] font-bold transition-colors ${
-                                            phoneTimer.canResend
-                                                ? "text-emerald-400 hover:underline"
-                                                : "text-gray-600 cursor-not-allowed"
-                                        }`}
-                                    >
-                                        {phoneTimer.canResend
-                                            ? "Resend OTP"
-                                            : `Resend in ${phoneTimer.remaining}s`
-                                        }
-                                    </button>
-                                </div>
-                            </StepWrap>
-                        )}
-
-                        {/* ── STEP: Email ── */}
-                        {step === "email" && (
-                            <StepWrap key="email">
-                                <StepHead
-                                    title="Enter Email"
-                                    sub="We'll send a 6-digit verification code."
-                                    step="Step 2 of 3"
-                                />
-                                <VerifiedBadge label={`Phone verified: +91 ${phone}`} />
-                                <Field
-                                    label="Email Address"
+                                    label="Email or Phone Number"
                                     icon={<Mail size={16} />}
-                                    type="email"
-                                    placeholder="aman@example.com"
-                                    value={email}
-                                    onChange={setEmail}
+                                    type="text"
+                                    placeholder="aman@example.com or 9876543210"
+                                    value={identifier}
+                                    onChange={setIdentifier}
                                 />
-                                <ActionBtn label="Send OTP" loading={loading} onClick={handleSendEmailOtp} />
+                                <ActionBtn label="Send OTP" loading={loading} onClick={handleSendOtp} />
                             </StepWrap>
                         )}
 
-                        {/* ── STEP: Email OTP ── */}
-                        {step === "email_otp" && (
-                            <StepWrap key="email_otp">
+                        {/* ── STEP 2: OTP ── */}
+                        {step === "otp" && (
+                            <StepWrap key="otp">
                                 <StepHead
-                                    title="Verify Email"
-                                    sub={`Enter the 6-digit code sent to ${email}`}
+                                    title="Verify OTP"
+                                    sub={`Enter the 6-digit code sent to ${identifier}`}
                                     step="Step 2 of 3"
                                 />
                                 <OtpBoxes value={otp} onChange={setOtp} length={6} />
-                                <ActionBtn label="Verify" loading={loading} onClick={handleVerifyEmailOtp} />
+                                <ActionBtn label="Verify" loading={loading} onClick={handleVerifyOtp} />
                                 <div className="flex items-center justify-between mt-4">
-                                    <button onClick={() => { setStep("email"); setOtp(""); }} className="text-[13px] text-gray-600 hover:text-gray-400 transition-colors">
-                                        ← Change email
+                                    <button
+                                        onClick={() => { setStep("identifier"); setOtp(""); }}
+                                        className="text-[13px] text-gray-600 hover:text-gray-400 transition-colors"
+                                    >
+                                        ← Change account
                                     </button>
                                     <button
-                                        onClick={handleResendEmailOtp}
-                                        disabled={!emailTimer.canResend}
+                                        onClick={handleResendOtp}
+                                        disabled={!otpTimer.canResend}
                                         className={`text-[13px] font-bold transition-colors ${
-                                            emailTimer.canResend
+                                            otpTimer.canResend
                                                 ? "text-emerald-400 hover:underline"
                                                 : "text-gray-600 cursor-not-allowed"
                                         }`}
                                     >
-                                        {emailTimer.canResend
+                                        {otpTimer.canResend
                                             ? "Resend OTP"
-                                            : `Resend in ${emailTimer.remaining}s`
+                                            : `Resend in ${otpTimer.remaining}s`
                                         }
                                     </button>
                                 </div>
                             </StepWrap>
                         )}
 
-                        {/* ── STEP: Profile ── */}
-                        {step === "profile" && (
-                            <StepWrap key="profile">
+                        {/* ── STEP 3: Reset Password ── */}
+                        {step === "reset" && (
+                            <StepWrap key="reset">
                                 <StepHead
-                                    title="Create Password"
-                                    sub="Almost done! Set up your name and password."
+                                    title="Set New Password"
+                                    sub="Choose a strong password you haven't used before."
                                     step="Step 3 of 3"
                                 />
 
-                                <div className="flex flex-wrap gap-2 mb-5">
-                                    {phoneVerified && <VerifiedPill label="Phone" />}
-                                    {emailVerified && <VerifiedPill label="Email" />}
-                                </div>
+                                <VerifiedBadge label={`OTP verified for ${identifier}`} />
 
                                 <div className="space-y-4">
-                                    <Field
-                                        label="Full Name"
-                                        icon={<User size={16} />}
-                                        placeholder="Aman Sharma"
-                                        value={name}
-                                        onChange={setName}
-                                    />
-                                    <Field
-                                        label="Referral Code (Optional)"
-                                        icon={<UserPlus size={16} />}
-                                        placeholder="Enter code if you have one"
-                                        value={referral}
-                                        onChange={setReferral}
-                                    />
-
                                     {/* Password */}
                                     <div className="space-y-1.5">
                                         <label className="text-[12px] uppercase tracking-[0.15em] font-bold text-gray-500 ml-0.5">
-                                            Password
+                                            New Password
                                         </label>
                                         <div className="relative group">
                                             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-emerald-400 transition-colors">
@@ -675,7 +457,6 @@ const Register = () => {
                                                 {showConfirm ? <EyeOff size={15} /> : <Eye size={15} />}
                                             </button>
                                         </div>
-                                        {/* Live match indicator */}
                                         {confirmPassword.length > 0 && (
                                             <p className={`text-[12px] font-bold ml-1 ${
                                                 confirmPassword === password ? "text-emerald-400" : "text-red-400"
@@ -686,28 +467,28 @@ const Register = () => {
                                     </div>
                                 </div>
 
-                                <ActionBtn label="Create Account" loading={loading} onClick={handleCompleteProfile} />
+                                <ActionBtn label="Reset Password" loading={loading} onClick={handleResetPassword} />
                             </StepWrap>
                         )}
                     </AnimatePresence>
 
-                    {/* Sign in link */}
+                    {/* Back to login */}
                     <p className="text-center text-gray-600 mt-7 text-xs">
-                        Already have an account?{" "}
+                        Remembered your password?{" "}
                         <Link href="/login" className="text-emerald-400 font-bold hover:text-emerald-300 transition-colors">
                             Sign In
                         </Link>
                     </p>
 
-                    {/* FIU Registration Notice */}
-                    <div className="mt-5 flex items-start gap-2.5 p-3 rounded-xl border border-amber-500/20 bg-amber-500/6">
-                        <ShieldCheck size={14} className="text-amber-400 shrink-0 mt-0.5" />
+                    {/* Security notice */}
+                    <div className="mt-5 flex items-start gap-2.5 p-3 rounded-xl border border-emerald-500/15 bg-emerald-500/5">
+                        <ShieldCheck size={14} className="text-emerald-400 shrink-0 mt-0.5" />
                         <div className="min-w-0">
-                            <p className="text-[13px] font-black text-amber-400 leading-tight">
-                                FIU Registration in Progress
+                            <p className="text-[13px] font-black text-emerald-400 leading-tight">
+                                Secure Password Recovery
                             </p>
-                            <p className="text-[12px] text-amber-400/70 font-semibold mt-0.5">
-                                REID Received
+                            <p className="text-[12px] text-emerald-400/70 font-semibold mt-0.5">
+                                Never share your OTP with anyone
                             </p>
                         </div>
                     </div>
@@ -738,9 +519,9 @@ const StepHead = ({ title, sub, step }: { title: string; sub: string; step: stri
     </div>
 );
 
-const Field = ({ label, icon, type = "text", placeholder, value, onChange, prefix }: {
+const Field = ({ label, icon, type = "text", placeholder, value, onChange }: {
     label: string; icon: React.ReactNode; type?: string; placeholder: string;
-    value: string; onChange: (v: string) => void; prefix?: string;
+    value: string; onChange: (v: string) => void;
 }) => (
     <div className="space-y-1.5 group">
         <label className="text-[12px] uppercase tracking-[0.15em] font-bold text-gray-500 group-focus-within:text-emerald-400 transition-colors ml-0.5">
@@ -750,17 +531,12 @@ const Field = ({ label, icon, type = "text", placeholder, value, onChange, prefi
             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-emerald-400 transition-colors">
                 {icon}
             </span>
-            {prefix && (
-                <span className="absolute left-10 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-500 pointer-events-none">
-                    {prefix}
-                </span>
-            )}
             <input
                 type={type}
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
                 placeholder={placeholder}
-                className={`w-full ${prefix ? "pl-20" : "pl-10"} pr-4 py-3 bg-white/4 border border-white/8 rounded-xl focus:border-emerald-500/50 focus:bg-emerald-500/3 outline-none transition-all text-white text-sm placeholder:text-gray-700`}
+                className="w-full pl-10 pr-4 py-3 bg-white/4 border border-white/8 rounded-xl focus:border-emerald-500/50 focus:bg-emerald-500/3 outline-none transition-all text-white text-sm placeholder:text-gray-700"
             />
         </div>
     </div>
@@ -773,11 +549,9 @@ const OtpBoxes = ({ value, onChange, length }: { value: string; onChange: (v: st
         if (!/^\d*$/.test(digit)) return;
         const arr = value.split("");
         arr[index] = digit.slice(-1);
-        // Fill any gaps with empty string
         while (arr.length < length) arr.push("");
         const next = arr.join("").slice(0, length);
         onChange(next);
-        // Auto-focus next box
         if (digit && index < length - 1) {
             refs[index + 1]?.focus();
         }
@@ -869,10 +643,4 @@ const VerifiedBadge = ({ label }: { label: string }) => (
     </div>
 );
 
-const VerifiedPill = ({ label }: { label: string }) => (
-    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-emerald-500/20 bg-emerald-500/8 text-[13px] font-black text-emerald-400 uppercase tracking-widest">
-        <CheckCircle2 size={9} /> {label}
-    </span>
-);
-
-export default Register;
+export default ForgotPassword;
