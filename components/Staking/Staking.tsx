@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { ShieldCheck, Zap, Globe, ArrowRight, Sparkles, LucideIcon, Users, Lock } from "lucide-react";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ShieldCheck, Zap, Globe, ArrowRight, ArrowLeft, Sparkles, LucideIcon, Users, Lock, HelpCircle, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { useStaking, type StakingPlan } from "@/context/StakingContext";
 import { SectionLoader } from "@/components/Include/Loader";
+import api from "@/lib/axios";
+import { ENDPOINTS } from "@/lib/endpoints";
 
 // ─── Icon map (fallback rotation for plans) ─────────────────────────────────
 
@@ -101,12 +103,17 @@ const PlanCard = ({ plan, index, isBest }: { plan: StakingPlan; index: number; i
 
             {/* Stats */}
             <div className="flex-1 mb-6">
-                <StatRow label="Min. Stake"     value={`${plan.min_stake.toLocaleString()} YTP`} highlight={isBest} />
-                <StatRow label="Referral Bonus" value={`${plan.referral_reward}% P.A.`}           highlight={isBest} />
-                <StatRow label="Lock Period"    value={`${plan.validity} Days`}                    highlight={isBest} />
-                {plan.staking_hike > 0 && (
-                    <StatRow label="Staking Hike" value={`+${plan.staking_hike}%`} highlight={isBest} green />
+                <StatRow label="Min. Stake"   value={`${plan.min_stake.toLocaleString()} YTP`} highlight={isBest} />
+                {plan.referral_reward > 0 && (
+                    <StatRow label="Referral Bonus" value={`${plan.referral_reward}% P.A.`} highlight={isBest} />
                 )}
+                <StatRow label="Lock Period"  value={`${plan.validity} Days`}                  highlight={isBest} />
+                <StatRow
+                    label="Hike"
+                    value={plan.staking_hike > 0 ? `+${plan.staking_hike}%` : "—"}
+                    highlight={isBest}
+                    green={plan.staking_hike > 0}
+                />
             </div>
 
             {/* Cost + CTA */}
@@ -144,6 +151,25 @@ const PlanCard = ({ plan, index, isBest }: { plan: StakingPlan; index: number; i
 const Staking = () => {
     const { plans, loading, totalSubscribers, totalStakedAssets } = useStaking();
 
+    const [faqs, setFaqs]               = useState<{ id: number; name: string; description: string }[]>([]);
+    const [faqOpenId, setFaqOpenId]     = useState<number | null>(null);
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await api.get(ENDPOINTS.FAQ_LIST, { params: { code: "staking" } });
+                const raw = res.data?.data ?? res.data;
+                if (Array.isArray(raw)) {
+                    setFaqs(
+                        raw
+                            .filter((f) => f?.name && f?.description)
+                            .map((f) => ({ id: f.id, name: f.name, description: f.description }))
+                    );
+                }
+            } catch { /* silent — FAQ section hidden if fetch fails */ }
+        })();
+    }, []);
+
     const statBadges = [
         { icon: Users, label: `${totalSubscribers.toLocaleString()} Subscribers`,                                             color: "text-sky-400"    },
         { icon: Lock,  label: `${totalStakedAssets.toLocaleString(undefined, { maximumFractionDigits: 0 })} YTP Locked`,      color: "text-emerald-400" },
@@ -156,6 +182,24 @@ const Staking = () => {
 
     return (
         <div className="w-full max-w-7xl mx-auto px-4 md:px-6 py-8 pb-28 space-y-10">
+
+            {/* ── Back button row ── */}
+            <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35 }}
+                className="flex items-center gap-4"
+            >
+                <Link href="/dashboard">
+                    <button className="h-9 w-9 rounded-xl bg-white/5 border border-white/8 flex items-center justify-center text-gray-400 hover:text-emerald-400 hover:border-emerald-500/30 transition-all">
+                        <ArrowLeft size={16} />
+                    </button>
+                </Link>
+                <div>
+                    <h1 className="text-xl font-black text-white tracking-tight">Staking</h1>
+                    <p className="text-sm text-gray-600 mt-0.5">Choose your plan and start earning</p>
+                </div>
+            </motion.div>
 
             {/* Hero */}
             <motion.div
@@ -176,10 +220,11 @@ const Staking = () => {
                     </span>
                 </h1>
 
-                {/* <p className="text-gray-500 text-base md:text-lg max-w-xl mx-auto leading-relaxed">
-                    Choose your tier and start generating passive rewards.
-                    Premium assets deserve premium yields.
-                </p> */}
+                <p className="text-gray-400 text-sm md:text-base max-w-xl mx-auto leading-relaxed pt-2">
+                    <span className="font-black text-white">YatriPay:</span>{" "}
+                    <span className="text-emerald-400 font-bold">Daily earning</span>{" "}
+                    App / Platform
+                </p>
             </motion.div>
 
             {/* Trust badges */}
@@ -192,11 +237,11 @@ const Staking = () => {
                 {statBadges.map((b, i) => (
                     <div
                         key={i}
-                        className="flex items-center gap-2.5 rounded-2xl border border-white/6 px-4 py-3"
+                        className="flex items-center gap-3 rounded-2xl border border-white/6 px-5 py-4"
                         style={{ background: "rgba(10,26,15,0.7)" }}
                     >
-                        <b.icon size={16} className={b.color} />
-                        <span className="text-[13px] font-bold text-white tracking-tight truncate">{b.label}</span>
+                        <b.icon size={20} className={b.color} />
+                        <span className="text-base md:text-lg font-black text-white tracking-tight truncate">{b.label}</span>
                     </div>
                 ))}
             </motion.div>
@@ -212,16 +257,63 @@ const Staking = () => {
                 </div>
             )}
 
-            {/* Footnote */}
-            {/* <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
-                className="text-center text-xs text-gray-700 pb-2"
-            >
-                Staking rewards are calculated and distributed daily.
-                Funds can be withdrawn after the lock period ends.
-            </motion.p> */}
+            {/* FAQ section */}
+            {faqs.length > 0 && (
+                <motion.section
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.25, duration: 0.4 }}
+                    className="max-w-3xl mx-auto space-y-4"
+                >
+                    <div className="flex items-center gap-2.5">
+                        <div className="h-8 w-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                            <HelpCircle size={15} className="text-emerald-400" />
+                        </div>
+                        <h2 className="text-lg md:text-xl font-black text-white tracking-tight">Frequently Asked Questions</h2>
+                    </div>
+
+                    <div className="space-y-2.5">
+                        {faqs.map((f) => {
+                            const open = faqOpenId === f.id;
+                            return (
+                                <div
+                                    key={f.id}
+                                    className={`rounded-2xl border transition-all ${
+                                        open ? "border-emerald-500/25" : "border-white/6 hover:border-white/15"
+                                    }`}
+                                    style={{ background: "rgba(10,26,15,0.7)" }}
+                                >
+                                    <button
+                                        onClick={() => setFaqOpenId(open ? null : f.id)}
+                                        className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left"
+                                    >
+                                        <span className="text-sm md:text-base font-bold text-white">{f.name}</span>
+                                        <ChevronDown
+                                            size={16}
+                                            className={`shrink-0 transition-transform ${open ? "rotate-180 text-emerald-400" : "text-gray-500"}`}
+                                        />
+                                    </button>
+                                    <AnimatePresence initial={false}>
+                                        {open && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: "auto", opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                transition={{ duration: 0.22 }}
+                                                className="overflow-hidden"
+                                            >
+                                                <div className="px-5 pb-4 text-sm text-gray-400 leading-relaxed whitespace-pre-line border-t border-white/5 pt-4">
+                                                    {f.description}
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </motion.section>
+            )}
 
         </div>
     );

@@ -102,18 +102,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             const data = res.data?.data;
             if (data) {
                 const userData: StoredUser = {
-                    id:               data.id,
-                    first_name:       data.first_name || "",
-                    last_name:        data.last_name || "",
-                    email:            data.email || "",
-                    phone_no:         data.phone_no || "",
-                    avatar:           data.avatar || null,
-                    pin_status:       data.pin_status ?? data.pin_set ?? data.is_pin_set ?? false,
-                    role:             data.role ?? 0,
-                    referral_id:      data.referral_id || null,
-                    referred_by_name: data.referred_by_name || null,
-                    is_investor:      data.is_investor ?? false,
-                    google2fa_enable: data.google2fa_enable ?? false,
+                    id:                data.id,
+                    first_name:        data.first_name || "",
+                    last_name:         data.last_name || "",
+                    email:             data.email || "",
+                    phone_no:          data.phone_no || "",
+                    avatar:            data.avatar || null,
+                    pin_status:        data.pin_status ?? data.pin_set ?? data.is_pin_set ?? false,
+                    role:              data.role ?? 0,
+                    referral_id:       data.referral_id || null,
+                    referred_by_name:  data.referred_by_name || null,
+                    is_investor:       data.is_investor ?? false,
+                    google2fa_enable:  data.google2fa_enable ?? false,
+                    google2fa_qr_code: data.google2fa_qr_code || null,
                 };
                 setUserData(userData);
                 setUser(userData);

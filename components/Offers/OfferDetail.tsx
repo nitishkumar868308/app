@@ -584,7 +584,7 @@ const OfferDetail = ({ slug }: { slug: string }) => {
                                                     if (t.is_social_media) setScreenshotTask(t);
                                                     else if (t.is_social_follow) setFollowTask(t);
                                                 }}
-                                                onStartPool={async (t) => {
+                                                onStartPool={offerConfig.api === "iphone" ? async (t) => {
                                                     try {
                                                         const res = await api.post(ENDPOINTS.START_IPHONE_POOL, { task_id: t.id });
                                                         if (res.data?.success) {
@@ -599,7 +599,7 @@ const OfferDetail = ({ slug }: { slug: string }) => {
                                                     } catch (err: any) {
                                                         toast.error(getApiError(err));
                                                     }
-                                                }}
+                                                } : undefined}
                                             />
                                         </div>
                                     );

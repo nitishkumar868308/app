@@ -1,25 +1,72 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { TrendingUp, Eye, EyeOff } from "lucide-react";
 import { useWallet } from "@/context/WalletContext";
+import { useAuth } from "@/context/AuthContext";
+import api from "@/lib/axios";
+import { ENDPOINTS } from "@/lib/endpoints";
 
 type Currency = "INR" | "YTP";
 
 const NetWorthSection = () => {
-    const [visible,  setVisible]  = useState(false);
+    const [visible, setVisible]   = useState(false);
     const [currency, setCurrency] = useState<Currency>("INR");
+    const [dailyYtp, setDailyYtp] = useState<number | null>(null);
 
+    const { token } = useAuth();
     const { ytpBalance, inrBalance, ytpToInrRate } = useWallet();
 
-    // Format values from real data
+    // Fetch today's staking rewards — sum of rewards credited in last 24 hours
+    useEffect(() => {
+        if (!token) return;
+        (async () => {
+            try {
+                const res = await api.get(ENDPOINTS.STAKING_REWARDS);
+                const raw = res.data?.data ?? res.data?.results ?? res.data;
+                const list = Array.isArray(raw) ? raw : [];
+
+                const now = Date.now();
+                const dayAgo = now - 24 * 60 * 60 * 1000;
+                const todayTotal = list.reduce((sum: number, r: any) => {
+                    const ts = new Date(r?.created_at ?? r?.credited_at ?? 0).getTime();
+                    if (!Number.isFinite(ts) || ts < dayAgo) return sum;
+                    const amt = Number(r?.amount ?? r?.reward_amount ?? 0);
+                    return Number.isFinite(amt) ? sum + amt : sum;
+                }, 0);
+
+                setDailyYtp(todayTotal);
+            } catch {
+                setDailyYtp(null);
+            }
+        })();
+    }, [token]);
+
     const inrFormatted = inrBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const ytpFormatted = ytpBalance.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 });
 
+    // Real daily profit
+    const hasDailyData = dailyYtp !== null;
+    const dailyYtpValue = dailyYtp ?? 0;
+    const dailyInrValue = dailyYtpValue * (ytpToInrRate || 0);
+    const dailyPctInr   = inrBalance > 0 ? (dailyInrValue / inrBalance) * 100 : 0;
+    const dailyPctYtp   = ytpBalance > 0 ? (dailyYtpValue / ytpBalance) * 100 : 0;
+
     const data: Record<Currency, { symbol: string; amount: string; profit: string; profitRaw: string }> = {
-        INR: { symbol: "₹", amount: inrFormatted,             profit: `+₹${(inrBalance * 0.035).toFixed(2)}`, profitRaw: "+3.5%" },
-        YTP: { symbol: "",  amount: `${ytpFormatted} YTP`,    profit: `+${(ytpBalance * 0.035).toFixed(2)} YTP`, profitRaw: "+3.5%" },
+        INR: {
+            symbol:    "₹",
+            amount:    inrFormatted,
+            profit:    hasDailyData ? `+₹${dailyInrValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—",
+            profitRaw: hasDailyData ? `${dailyPctInr >= 0 ? "+" : ""}${dailyPctInr.toFixed(2)}%` : "—",
+        },
+        YTP: {
+            // No suffix text — currency is already indicated by the INR/YTP toggle above
+            symbol:    "",
+            amount:    ytpFormatted,
+            profit:    hasDailyData ? `+${dailyYtpValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} YTP` : "—",
+            profitRaw: hasDailyData ? `${dailyPctYtp >= 0 ? "+" : ""}${dailyPctYtp.toFixed(2)}%` : "—",
+        },
     };
 
     const { symbol, amount, profit, profitRaw } = data[currency];
@@ -120,7 +167,7 @@ const NetWorthSection = () => {
 
                     {/* Right: % badge */}
                     <div className="shrink-0 flex flex-col items-center justify-center h-16 w-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
-                        <span className="text-emerald-400 text-base font-black leading-none">{profitRaw}</span>
+                        <span className="text-emerald-400 text-sm font-black leading-none">{profitRaw}</span>
                         <span className="text-[13px] text-gray-500 font-bold uppercase tracking-wider mt-0.5">Today</span>
                     </div>
                 </div>

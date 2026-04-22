@@ -100,7 +100,7 @@ export const ALL_ACTIONS: QuickAction[] = [
         id: "2fa",
         label: "2FA Security",
         icon: Fingerprint,
-        href: "/profile",
+        href: "/2fa",
         color: "text-rose-400",
         bg: "bg-rose-500/10",
         border: "border-rose-500/20",
@@ -139,11 +139,16 @@ export const useCompletedActions = () => {
                     api.get(ENDPOINTS.BANK_DETAILS_LIST),
                 ]);
 
-                // KYC check
+                // KYC check — match any success-like status or a truthy boolean flag
                 if (kycRes.status === "fulfilled") {
                     const kycData = kycRes.value.data?.data;
-                    const kycStatus = (kycData?.kyc_status || kycData?.status || "").toUpperCase();
-                    if (["APPROVED", "COMPLETED", "VERIFIED"].includes(kycStatus)) {
+                    const raw = (kycData?.kyc_status || kycData?.status || "").toString().toUpperCase();
+                    const isApprovedString = [
+                        "APPROVED", "COMPLETED", "VERIFIED", "SUCCESS",
+                        "SUCCESSFUL", "DONE", "ACTIVE",
+                    ].includes(raw) || raw.includes("APPROVED") || raw.includes("VERIFIED");
+                    const isApprovedFlag = kycData?.is_verified === true || kycData?.verified === true || kycData?.is_approved === true;
+                    if (isApprovedString || isApprovedFlag) {
                         done.add("kyc");
                     }
                 }

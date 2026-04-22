@@ -57,6 +57,7 @@ export interface StoredUser {
     referred_by_name: string | null;
     is_investor: boolean;
     google2fa_enable: boolean;
+    google2fa_qr_code?: string | null;
 }
 
 export const setUserData = (user: StoredUser) => {

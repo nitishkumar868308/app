@@ -16,7 +16,10 @@ export const ENDPOINTS = {
 
     // ── Auth / Login ──────────────────────────────────────────────────────────
     LOGIN:                  "/users/auth/login/",
-    VERIFY_2FA:             "/users/auth/verify-2fa/",
+    VERIFY_2FA:             "/users/verify-2fa/",
+
+    // ── 2FA Enable/Disable (for logged-in users) ─────────────────────────────
+    VERIFY_FA:              "/finance/verify/2FA/",
 
     // ── Forgot Password ───────────────────────────────────────────────────────
     FORGOT_ACCOUNT:         "/users/auth/forgot-account/",
@@ -90,6 +93,12 @@ export const ENDPOINTS = {
 
     // ── General / Chart ──────────────────────────────────────────────────────
     CHART_DATA:             "/core/time_range_data/",
+    FAQ_LIST:               "/core/faq/list/",
+
+    // ── Notification Feed (backend: NotificationFeed model) ─────────────────
+    NOTIFICATION_FEED_LIST:      "/core/notifications-feed/list/",
+    NOTIFICATION_FEED_MARK_READ: "/core/notifications-feed/mark-read/",
+    NOTIFICATION_FEED_CLEAR:     "/core/notifications-feed/clear/",
 
     // ── Promotion / Voucher ─────────────────────────────────────────────────
     STAKING_CASH_VOUCHER:   "/promotion/tasks/staking-cashback-voucher/",
